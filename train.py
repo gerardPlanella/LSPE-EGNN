@@ -40,7 +40,7 @@ if __name__ == "__main__":
     mean, mad = get_mean_and_mad(train_loader, QM9Properties.ALPHA)
 
     model = EGNN(11, 128, 1, 4, 3, None, aggr = "add", act=nn.SiLU, pool=global_add_pool)
-    model = QM9Regressor(model, QM9Properties.ALPHA, lr=1e-3, weight_decay=1e-16, mean=mean, mad=mad, epochs = 1)
+    model = QM9Regressor(model, QM9Properties.ALPHA, lr=1e-3, weight_decay=1e-16, mean=mean, mad=mad, epochs = 2)
 
 
     # initialise the wandb logger and name your wandb project
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     wandb_logger.experiment.config["property"] = QM9Properties.ALPHA.name
 
     
-    trainer = pl.Trainer(logger=wandb_logger, accelerator="cpu", max_epochs=1)
+    trainer = pl.Trainer(logger=wandb_logger, accelerator="cpu", max_epochs=2)
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 

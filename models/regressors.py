@@ -21,7 +21,7 @@ class QM9Regressor(pl.LightningModule):
         self.mean = mean
         self.mad = mad
 
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=['model'])
 
     def forward(self, graph):
         if isinstance(self.model, EGNN):
