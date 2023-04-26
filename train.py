@@ -38,8 +38,8 @@ if __name__ == "__main__":
     mean, mad = get_mean_and_mad(train_loader, QM9Properties.ALPHA)
 
     model = EGNN(11, 128, 1, 4, 3, aggr = "add", act=nn.SiLU, pool=global_add_pool)
-    model = QM9Regressor(model, QM9Properties.ALPHA, lr=1e-3, weight_decay=1e-16, mean=mean, mad=mad)
+    model = QM9Regressor(model, QM9Properties.ALPHA, lr=1e-3, weight_decay=1e-16, mean=mean, mad=mad, epochs =2)
 
     
-    trainer = pl.Trainer(logger=None, accelerator="gpu", max_epochs=1)
+    trainer = pl.Trainer(logger=None, accelerator="cpu", max_epochs=1)
     trainer.fit(model, train_loader, valid_loader)
