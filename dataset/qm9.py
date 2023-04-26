@@ -1,5 +1,6 @@
 from enum import Enum
 import torch
+from torch_geometric.loader import DataLoader
 
 class QM9Properties(Enum):
     MU = 0 # Dipole moment in Debye
@@ -24,7 +25,7 @@ class QM9Properties(Enum):
 
 
 
-def get_mean_and_mad(train_dataset, property:QM9Properties):
+def get_mean_and_mad(train_dataset:DataLoader, property:QM9Properties):
     values = train_dataset.y[:, property.value]
     mean = torch.mean(values)
     mad = torch.mean(torch.abs(values - mean))
