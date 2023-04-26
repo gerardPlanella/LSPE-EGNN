@@ -6,9 +6,12 @@ from torch_geometric.datasets import QM9
 from torch_geometric.transforms import RadiusGraph, Compose, BaseTransform, Distance, Cartesian, RandomRotate
 from torch_geometric.loader import DataLoader
 import torch_geometric.utils as utils
+import pytorch_lightning as pl
 import sys
 
-from egnn import EGNN
+from models.egnn import EGNN
+from models.regressors import QM9Regressor
+from dataset.qm9 import QM9Properties, get_mean_and_mad
 
 def split_data(data, train_percent, dev_percent, test_percent):
     assert train_percent + dev_percent + test_percent == 1.0
@@ -21,27 +24,9 @@ def split_data(data, train_percent, dev_percent, test_percent):
     return train_split, dev_split, test_split
 
 
-def train(train_loader, valid_loader, test_loader):
-
-
-    for batch in train_loader:
-        print("hello")
-
-
-
-
-
-
 
 if __name__ == "__main__":
-
-    sys.path.insert(0, "../")
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    torch.manual_seed(42)
-    if device == "cuda":
-        torch.cuda.manual_seed(42)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    pl.seed_everything(42, workers=True)
 
     dataset = QM9(root = "./data").shuffle()
     train_data, valid_data, test_data = split_data(dataset, 0.6, 0.2, 0.2)
@@ -50,7 +35,11 @@ if __name__ == "__main__":
     valid_loader = DataLoader(valid_data, batch_size = 32)
     test_loader = DataLoader(test_data, batch_size = 32)
     
-    model = EGNN(11, 128, 1, 4, 3, aggr = "add", act=nn.SiLU, pool=global_add_pool).to(device)
-    
+    mean, mad = get_mean_and_mad(train_loader, QM9Properties.ALPHA)
 
-    train(model, train_loader, valid_loader, test_loader)
+    model = EGNN(11, 128, 1, 4, 3, aggr = "add", act=nn.SiLU, pool=global_add_pool)
+    model = QM9Regressor(model, QM9Properties.ALPHA, lr=1e-3, weight_decay=1e-16, mean=mean, mad=mad)
+
+    
+    trainer = pl.Trainer(logger=None, accelerator="gpu", max_epochs=1)
+    trainer.fit(model, train_loader, valid_loader)
