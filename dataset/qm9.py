@@ -1,5 +1,6 @@
 from enum import Enum
 import torch
+from torch_geometric.loader import DataLoader
 
 class QM9Properties(Enum):
     MU = 0 # Dipole moment in Debye
