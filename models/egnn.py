@@ -53,10 +53,11 @@ class EGNNLayer(MessagePassing):
 
 class EGNN(nn.Module):
     """ E(n)-equivariant Message Passing Network """
-    def __init__(self, node_features, hidden_features, out_features, num_layers, dim, aggr="mean", act=nn.ReLU, pool=global_add_pool):
+    def __init__(self, node_features, hidden_features, out_features, num_layers, dim, radius, aggr="mean", act=nn.ReLU, pool=global_add_pool):
         super().__init__()
         edge_features = 1
         self.dim = dim
+        self.radius = radius
 
         self.embedder = nn.Sequential(nn.Linear(node_features, hidden_features),
                                       act(),

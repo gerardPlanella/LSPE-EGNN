@@ -21,6 +21,8 @@ class QM9Regressor(pl.LightningModule):
         self.mean = mean
         self.mad = mad
 
+        self.save_hyperparameters()
+
     def forward(self, graph):
         if isinstance(self.model, EGNN):
             # Don't add distance, as this is done internally
