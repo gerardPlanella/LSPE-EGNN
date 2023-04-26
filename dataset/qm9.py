@@ -18,14 +18,32 @@ def split_data(data, train_percent, test_percent):
     return train_split, dev_split, test_split
 
 
-def train(model, data_split):
+def train(model, train_loader, valid_loader, test_loader):
+
+
+
 
 
 if __name__ == "__main__":
-    dataset = QM9(root = "./data").shuffle()
-    loader = DataLoader(dataset, batch_size = 1)
-    for batch in loader:
-        for item in batch:
 
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    torch.manual_seed(42)
+    if device == "cuda":
+        torch.cuda.manual_seed(42)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    dataset = QM9(root = "./data").shuffle()
+    train_data, valid_data, test_data = split_data(dataset, 80, 20)
+
+    train_loader = DataLoader(train_data, batch_size = 32)
+    valid_loader = DataLoader(train_data, batch_size = 32)
+    test_loader = DataLoader(train_data, batch_size = 32)
+    
+    model = EGNN().to(device)
+    
+    train(model, train_loader, valid_loader, test_loader)
+    
         
 
