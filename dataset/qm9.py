@@ -5,41 +5,27 @@ from torch_geometric.transforms import RadiusGraph, Compose, BaseTransform, Dist
 from torch_geometric.loader import DataLoader
 import torch_geometric.utils as utils
 
+from egnn import EGNN
+
+def split_data(data, train_percent, test_percent):
+    assert train_percent + test_percent < 100
+    dev_percent = 100 - train_percent - test_percent
+    data_len = len(data)
+    train_split = data[:data_len*(train_percent/100)]
+    dev_split = data[data_len*(train_percent/100):data_len*((train_percent + dev_percent)/100)]
+    test_split = data[data_len*((train_percent + dev_percent)/100):]
+
+    return train_split, dev_split, test_split
 
 
-
-
-class QM9Transform(BaseTransform):
-    def _init_(self):
-        self.cartesian = Cartesian()
-        self.distance = Distance(norm=False)
-
-    def _call_(self, data):
-        # Convert the molecular graph to Cartesian coordinates
-        data = self.cartesian(data)
-
-        # Calculate the pairwise distances between atoms
-        data = self.distance(data)
-
-        # Convert the distance matrix to edge indices and node features
-        edge_index, dist = utils.dense_to_sparse(data.dist)
-        data.edge_index = edge_index.t().contiguous()
-
-        # Add the atomic number as node features
-        data.x = torch.tensor(data.atomic_numbers, dtype=torch.long)
-
-        return data
-
-    def collate(self, data_list):
-        return utils.batch(data_list)
+def train(model, data_split):
 
 
 if __name__ == "__main__":
-    dataset = QM9(root = "./data")
+    dataset = QM9(root = "./data").shuffle()
     loader = DataLoader(dataset, batch_size = 1)
     for batch in loader:
         for item in batch:
-            print("hello")
-            break
-        break
+
+        
 
