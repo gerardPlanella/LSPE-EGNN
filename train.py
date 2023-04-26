@@ -1,5 +1,6 @@
 
 import torch
+from torch import nn
 from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
 from torch_geometric.datasets import QM9
 from torch_geometric.transforms import RadiusGraph, Compose, BaseTransform, Distance, Cartesian, RandomRotate
@@ -49,7 +50,7 @@ if __name__ == "__main__":
     valid_loader = DataLoader(valid_data, batch_size = 32)
     test_loader = DataLoader(test_data, batch_size = 32)
     
-    model = EGNN().to(device)
+    model = EGNN(11, 128, 1, 4, 3, aggr = "add", act=nn.SiLU, pool=global_add_pool).to(device)
     
 
     train(model, train_loader, valid_loader, test_loader)
