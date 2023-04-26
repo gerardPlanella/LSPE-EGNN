@@ -25,7 +25,7 @@ class QM9Properties(Enum):
 
 
 def get_mean_and_mad(train_dataset, property:QM9Properties):
-    values = train_dataset.data.y[:, property.value]
+    values = train_dataset.y[:, property.value]
     mean = torch.mean(values)
     mad = torch.mean(torch.abs(values - mean))
     return mean, mad

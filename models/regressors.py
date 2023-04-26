@@ -4,8 +4,7 @@ import torch.nn.functional as F
 import torchmetrics
 import pytorch_lightning as pl
 from dataset.qm9 import QM9Properties
-
-from egnn import EGNN
+from models.egnn import EGNN
 
 class QM9Regressor(pl.LightningModule):
     def __init__(self, model, target:QM9Properties, lr, weight_decay, epochs, mean=0, mad=1):
