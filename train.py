@@ -9,13 +9,13 @@ import sys
 
 from egnn import EGNN
 
-def split_data(data, train_percent, test_percent):
-    assert train_percent + test_percent < 100
-    dev_percent = 100 - train_percent - test_percent
+def split_data(data, train_percent, dev_percent, test_percent):
+    assert train_percent + dev_percent + test_percent == 1.0
+
     data_len = len(data)
-    train_split = data[:data_len*(train_percent/100)]
-    dev_split = data[data_len*(train_percent/100):data_len*((train_percent + dev_percent)/100)]
-    test_split = data[data_len*((train_percent + dev_percent)/100):]
+    train_split = data[:int(data_len*train_percent)]
+    dev_split = data[int(data_len*train_percent):int(data_len*(train_percent + dev_percent))]
+    test_split = data[int(data_len*(train_percent + dev_percent)):]
 
     return train_split, dev_split, test_split
 
@@ -43,12 +43,13 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = False
 
     dataset = QM9(root = "./data").shuffle()
-    train_data, valid_data, test_data = split_data(dataset, 80, 20)
+    train_data, valid_data, test_data = split_data(dataset, 0.6, 0.2, 0.2)
 
     train_loader = DataLoader(train_data, batch_size = 32)
     valid_loader = DataLoader(valid_data, batch_size = 32)
     test_loader = DataLoader(test_data, batch_size = 32)
     
     model = EGNN().to(device)
+    
 
     train(model, train_loader, valid_loader, test_loader)
