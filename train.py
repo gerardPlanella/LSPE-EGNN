@@ -1,3 +1,4 @@
+
 import torch
 from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
 from torch_geometric.datasets import QM9
@@ -6,7 +7,6 @@ from torch_geometric.loader import DataLoader
 import torch_geometric.utils as utils
 import sys
 
-sys.path.insert(0, "../")
 from egnn import EGNN
 
 def split_data(data, train_percent, test_percent):
@@ -18,6 +18,16 @@ def split_data(data, train_percent, test_percent):
     test_split = data[data_len*((train_percent + dev_percent)/100):]
 
     return train_split, dev_split, test_split
+
+
+def train(train_loader, valid_loader, test_loader):
+
+
+    for batch in train_loader:
+        print("hello")
+
+
+
 
 
 
@@ -42,6 +52,3 @@ if __name__ == "__main__":
     model = EGNN().to(device)
 
     train(model, train_loader, valid_loader, test_loader)
-    
-        
-
