@@ -48,6 +48,11 @@ class QM9Regressor(pl.LightningModule):
         y = self.get_target(graph)
         self.valid_metric(pred*self.mad + self.mean, y)
 
+    def test_step(self, graph, batch_idx):
+        pred = self(graph).squeeze()
+        y = self.get_target(graph)
+        self.valid_metric(pred*self.mad + self.mean, y)
+
     def on_validation_epoch_end(self):
         self.log("valid MAE", self.valid_metric, prog_bar=True)
 
