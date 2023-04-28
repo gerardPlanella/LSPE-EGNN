@@ -111,7 +111,7 @@ if __name__ == "__main__":
     assert args.property in properties._member_names_
     args.property = properties[args.property]
 
-    assert args.train_split + args.val_split + args.test_split <= 1.0
+    assert args.train_split + args.val_split + args.test_split == 1.0
     
     
     pl.seed_everything(args.seed, workers=True)
