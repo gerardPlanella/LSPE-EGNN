@@ -87,11 +87,13 @@ class EGNN(nn.Module):
 
         dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         edge_attr = dist
+        edge_index = tg.utils.dense_to_sparse(torch.ones((x.size(0), x.size(0))), edge_attr=None)[0] #to try
        
         for layer in self.layers:
             x, pos = layer(x, pos, edge_index, dist) 
+            
 
-            # Update graph
+            # Update graph. If it is set to None, then a fully connected graph is implied.
             if self.radius:
                 edge_index = tg.nn.radius_graph(pos, self.radius, batch)
                 dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
