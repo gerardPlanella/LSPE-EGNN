@@ -28,6 +28,14 @@ def split_data(data, train_percent, dev_percent, test_percent):
     return train_split, dev_split, test_split
 
 
+datasets = {
+    "QM9": QM9
+}
+
+dataset_properties = {
+    "QM9": QM9Properties
+}
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
@@ -47,7 +55,6 @@ if __name__ == "__main__":
                         help='Percentage of Data to use for testing (default: 0.6)')
     parser.add_argument('--num_workers', type=int, default=4, metavar='N',
                         help='number of workers for the dataloader')
-    #TODO: Implement change in dataset
     parser.add_argument("--dataset", type=str, default="QM9", 
                         help="Dataset to use (QM9, )")
     parser.add_argument("--property", type=str, default="ALPHA", 
@@ -72,20 +79,23 @@ if __name__ == "__main__":
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
-    
-
     args = parser.parse_args()
+
+    assert args.dataset in datasets
+    assert args.dataset in dataset_properties
+    
+    properties = dataset_properties[args.dataset]
+    dataset_class = datasets[args.dataset]
+
+    assert args.property in properties._member_names_
+    args.property = properties[args.property]
 
     assert args.train_split + args.val_split + args.test_split <= 1.0
     
-    if args.dataset == "QM9":
-        assert args.property in QM9Properties._member_names_
-        args.property = QM9Properties[args.property]
-
-
+    
     pl.seed_everything(args.seed, workers=True)
 
-    dataset = QM9(root = args.dataset_path).shuffle()
+    dataset = dataset_class(root = args.dataset_path).shuffle()
 
     train_data, valid_data, test_data = split_data(dataset, args.train_split, args.val_split, args.test_split)
 
@@ -98,7 +108,12 @@ if __name__ == "__main__":
     #TODO: Do we want to add arguments for the activation fn, dim and pool?
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
                 args.num_layers, 3, None, aggr = args.aggregation, act=nn.SiLU, pool=global_add_pool)
-    model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
+    
+    if isinstance(dataset, QM9):
+        model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
+    else:
+        #If we implement multiple datasets we can add more type checks
+        raise NotImplementedError
 
 
     # initialise the wandb logger and name your wandb project
