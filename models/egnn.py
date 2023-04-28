@@ -21,6 +21,8 @@ class EGNNLayer(MessagePassing):
         self.pos_net = nn.Sequential(nn.Linear(hidden_features, hidden_features),
                                      act(),
                                      nn.Linear(hidden_features, 1))
+
+        self.edge_net = nn.Sequential(nn.Linear(hidden_features, 1), nn.Sigmoid())
         
         nn.init.xavier_uniform_(self.pos_net[-1].weight, gain=0.001)
 
@@ -36,10 +38,14 @@ class EGNNLayer(MessagePassing):
         input = [x_i, x_j] if edge_attr is None else [x_i, x_j, edge_attr]
         input = torch.cat(input, dim=-1)
         message = self.message_net(input)
+        is_edge = self.edge_net(message) 
+
+        message = message * is_edge
+
 
         pos_message = (pos_i - pos_j)*self.pos_net(message)
         message = torch.cat((message, pos_message), dim=-1)
-        return message
+        return message #m_ij
 
     def update(self, message, x, pos):
         """ Update node features and positions """
