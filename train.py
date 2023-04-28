@@ -15,7 +15,8 @@ import wandb
 
 from models.egnn import EGNN
 from models.regressors import QM9Regressor
-from dataset.qm9 import QM9Properties, get_mean_and_mad
+from dataset.qm9 import QM9Properties
+from dataset.utils import get_mean_and_mad
 
 def split_data(data, train_percent, dev_percent, test_percent):
     assert train_percent + dev_percent + test_percent == 1.0
@@ -34,6 +35,15 @@ datasets = {
 
 dataset_properties = {
     "QM9": QM9Properties
+}
+
+pools = {
+    "add": global_add_pool,
+    "mean": global_mean_pool
+}
+
+act_fns = {
+    "SiLU": nn.SiLU
 }
 
 
@@ -59,12 +69,20 @@ if __name__ == "__main__":
                         help="Dataset to use (QM9, )")
     parser.add_argument("--property", type=str, default="ALPHA", 
                         help="Property to predict (QM9: MU, ALPHA, ...)")
+    parser.add_argument("--pooling", type=str, default="add", 
+                        help="Pooling method (add, mean)")
+    parser.add_argument("--act_fn", type=str, default="SiLU", 
+                        help="Activation function (SiLU)")
     parser.add_argument("--aggregation", type=str, default="add", 
                         help="Aggregation method for message passing (default(add), mean, max)")           
     parser.add_argument('--weight_decay', type=float, default=1e-16, metavar='N',
                         help='weight decay')
     parser.add_argument('--lr', type=float, default=1e-3, metavar='N',
                         help='learning rate')
+    parser.add_argument('--radius', type=float, default=None, metavar='N',
+                        help='Used when working with Radius Graph (Default None)')
+    parser.add_argument('--dim', type=int, default=3, metavar='N',
+                        help='Coordinate Dimension')
     parser.add_argument('--node_feature_s', type=int, default=11, metavar='N',
                         help='Node Feature size')
     parser.add_argument('--hidden_feature_s', type=int, default=128, metavar='N',
@@ -80,6 +98,9 @@ if __name__ == "__main__":
     
 
     args = parser.parse_args()
+
+    assert args.pooling in pools
+    assert args.act_fn in act_fns
 
     assert args.dataset in datasets
     assert args.dataset in dataset_properties
@@ -107,7 +128,7 @@ if __name__ == "__main__":
 
     #TODO: Do we want to add arguments for the activation fn, dim and pool?
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
-                args.num_layers, 3, None, aggr = args.aggregation, act=nn.SiLU, pool=global_add_pool)
+                args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
     if isinstance(dataset, QM9):
         model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
