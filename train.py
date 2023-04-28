@@ -17,16 +17,84 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
+from rdkit import Chem
+from rdkit.Chem import rdchem
+from rdkit.Chem import rdMolDescriptors
+from rdkit.Chem.rdchem import HybridizationType
+from torch_geometric.utils import smiles
+from rdkit.Chem import rdchem
+from torch_geometric.data import Data
 
-def split_data(data, train_percent, dev_percent, test_percent):
-    assert train_percent + dev_percent + test_percent == 1.0
 
-    data_len = len(data)
-    train_split = data[:int(data_len*train_percent)]
-    dev_split = data[int(data_len*train_percent):int(data_len*(train_percent + dev_percent))]
-    test_split = data[int(data_len*(train_percent + dev_percent)):]
+def split_data(data):
+    
+    
+    train_split = data[:100000]
+    dev_split = data[100000:118000]
+    test_split = data[118000:]
 
     return train_split, dev_split, test_split
+
+
+'''
+It returns for all the features 0 so we will not use it for now. There is something called smiles
+that can be used somehow to get those.
+
+def get_atom_features(atom):
+    # atomic_num = atom.GetAtomicNum()
+    hybridization = atom.GetHybridization().real
+    is_aromatic = atom.GetIsAromatic()
+    chiral_tag = atom.GetChiralTag().real
+    formal_charge = atom.GetFormalCharge()
+
+    return [hybridization, is_aromatic, chiral_tag, formal_charge]
+
+def mol_from_data(data):
+    mol = rdchem.EditableMol(rdchem.Mol())
+
+    # Add atoms
+    for z in data.z:
+        mol.AddAtom(rdchem.Atom(int(z)))
+
+    # Add bonds
+    edge_index = data.edge_index.numpy()
+    for i in range(edge_index.shape[1]):
+        atom1, atom2 = edge_index[:, i]
+        if atom1 < atom2:
+            bond_type = rdchem.BondType.SINGLE
+            mol.AddBond(int(atom1), int(atom2), bond_type)
+
+    # Finalize the molecule
+    mol = mol.GetMol()
+    return mol
+
+
+
+def compute_extended_features(data):
+    mol = Chem.RWMol()  # Create an empty editable molecule
+
+    # Add atoms to the molecule
+    for charge in data.z.tolist():
+        atom = Chem.Atom(int(charge))
+        mol.AddAtom(atom)
+
+    # Add bonds to the molecule
+    for edge_indices in data.edge_index.transpose(0, 1).tolist():
+        atom1, atom2 = edge_indices
+        if not mol.GetBondBetweenAtoms(atom1, atom2):
+            mol.AddBond(atom1, atom2, Chem.rdchem.BondType.SINGLE)
+
+    # Compute the features for each atom in the molecule
+    atom_features = []
+
+    for atom in mol.GetAtoms():
+        atom_features.append(get_atom_features(atom))
+
+    return atom_features
+
+'''
+
+
 
 
 datasets = {
@@ -89,7 +157,7 @@ if __name__ == "__main__":
                         help='Hidden Feature size')
     parser.add_argument('--out_feature_s', type=int, default=1, metavar='N',
                         help='Output Feature size')
-    parser.add_argument('--num_layers', type=int, default=4, metavar='N',
+    parser.add_argument('--num_layers', type=int, default=7, metavar='N',
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
@@ -108,6 +176,8 @@ if __name__ == "__main__":
     properties = dataset_properties[args.dataset]
     dataset_class = datasets[args.dataset]
 
+
+
     assert args.property in properties._member_names_
     args.property = properties[args.property]
 
@@ -116,9 +186,19 @@ if __name__ == "__main__":
     
     pl.seed_everything(args.seed, workers=True)
 
-    dataset = dataset_class(root = args.dataset_path).shuffle()
+    dataset = dataset_class(root = args.dataset_path, transform=None, pre_transform=None).shuffle()
 
-    train_data, valid_data, test_data = split_data(dataset, args.train_split, args.val_split, args.test_split)
+
+    # for data in dataset:   all zeros--> deleted for now. used to get the extra features
+    #     extended_features = torch.tensor(compute_extended_features(data))
+    #     data.x = torch.cat([data.x, extended_features], dim=1)
+
+
+
+    train_data, valid_data, test_data = split_data(dataset)
+    
+    
+
 
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
@@ -139,6 +219,10 @@ if __name__ == "__main__":
 
     # initialise the wandb logger and name your wandb project
     wandb_logger = WandbLogger(project=args.wandb_project_name)
+    # Length of data
+    wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
+    wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
+    wandb_logger.experiment.config["Length of Test Data"] = len(test_data)
 
     # add your batch size to the wandb config
     wandb_logger.experiment.config["dataset"] = args.dataset

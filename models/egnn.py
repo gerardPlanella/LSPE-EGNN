@@ -39,12 +39,11 @@ class EGNNLayer(MessagePassing):
         input = torch.cat(input, dim=-1)
         message = self.message_net(input)
         is_edge = self.edge_net(message) 
-
-        message = message * is_edge
-
-
+        message = message * is_edge # should it be before or after the pos net
+    
         pos_message = (pos_i - pos_j)*self.pos_net(message)
         message = torch.cat((message, pos_message), dim=-1)
+        
         return message #m_ij
 
     def update(self, message, x, pos):
