@@ -133,7 +133,7 @@ if __name__ == "__main__":
                         help='Percentage of Data to use for validation (default: 0.6)')
     parser.add_argument('--test_split', type=float, default=0.2, metavar='S',
                         help='Percentage of Data to use for testing (default: 0.6)')
-    parser.add_argument('--num_workers', type=int, default=4, metavar='N',
+    parser.add_argument('--num_workers', type=int, default=3, metavar='N',
                         help='number of workers for the dataloader')
     parser.add_argument("--dataset", type=str, default="QM9", 
                         help="Dataset to use (QM9, )")
@@ -220,7 +220,7 @@ if __name__ == "__main__":
 
 
     # initialise the wandb logger and name your wandb project
-    wandb_logger = WandbLogger(project=args.wandb_project_name)
+    wandb_logger = WandbLogger(project=args.wandb_project_name, log_model=True)
     # Length of data
     wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
     wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
@@ -230,9 +230,12 @@ if __name__ == "__main__":
     wandb_logger.experiment.config["dataset"] = args.dataset
     wandb_logger.experiment.config["property"] = args.property.name
 
+    wandb_logger.watch(model, log_graph=False)
+
     
     trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs)
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 
+    wandb_logger.experiment.unwatch(model)
     wandb.finish()
