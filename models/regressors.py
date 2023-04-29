@@ -54,11 +54,13 @@ class QM9Regressor(pl.LightningModule):
         self.valid_metric(pred*self.mad + self.mean, y)
 
     def on_validation_epoch_end(self):
-        self.log("valid MAE", self.valid_metric, prog_bar=True)
+        self.log("valid MAE", self.valid_metric, prog_bar=True),
+        self.log("Learning Rate", self.lr, prog_bar = False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.lr, amsgrad=True, weight_decay=self.weight_decay
+            
         )
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
