@@ -39,7 +39,7 @@ class EGNNLayer(MessagePassing):
         input = torch.cat(input, dim=-1)
         message = self.message_net(input)
         is_edge = self.edge_net(message) 
-        message = message * is_edge # should it be before or after the pos net
+        message = message * is_edge 
     
         pos_message = (pos_i - pos_j)*self.pos_net(message)
         message = torch.cat((message, pos_message), dim=-1)
@@ -83,21 +83,56 @@ class EGNN(nn.Module):
                                   nn.Linear(hidden_features, out_features))
 
     def forward(self, x, pos, edge_index, batch):
+
+        """
+        ORIGINAL IMPLEMENTATION--> batch dist is changing 
         x = self.embedder(x)
 
         dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         edge_attr = dist
-        edge_index = tg.utils.dense_to_sparse(torch.ones((x.size(0), x.size(0))), edge_attr=None)[0] #to try
-       
+
         for layer in self.layers:
             x, pos = layer(x, pos, edge_index, dist) 
             
 
             # Update graph. If it is set to None, then a fully connected graph is implied.
+            # dist changes for every batch. Shouldnt it be the same for every
+        
             if self.radius:
                 edge_index = tg.nn.radius_graph(pos, self.radius, batch)
                 dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         
+        if self.pooler:
+            x = self.pooler(x, batch)
+        
+        x = self.head(x)
+
+
+        """
+
+        x = self.embedder(x)
+
+        dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
+        edge_attr = dist
+
+        for layer in self.layers:
+            x, pos = layer(x, pos, edge_index, dist) 
+            
+        # Update graph using radius or fully connected graph.
+        if self.radius:
+            edge_index = tg.nn.radius_graph(pos, self.radius, batch)
+            dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
+            edge_attr = dist
+        else:
+            num_nodes = pos.shape[0]
+            row = torch.arange(num_nodes, device=pos.device)
+            col = torch.arange(num_nodes, device=pos.device)
+            row = row.view(-1, 1).repeat(1, num_nodes).view(-1)
+            col = col.repeat(num_nodes)
+            edge_index = torch.stack([row, col], dim=0)
+            dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
+            edge_attr = dist[edge_index[1]]
+
         if self.pooler:
             x = self.pooler(x, batch)
         
