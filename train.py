@@ -11,6 +11,7 @@ import torch_geometric.utils as utils
 import pytorch_lightning as pl
 
 from pytorch_lightning.loggers import WandbLogger
+from pytorch_lightning.callbacks import LearningRateMonitor
 import wandb
 
 from models.egnn import EGNN
@@ -232,8 +233,9 @@ if __name__ == "__main__":
 
     wandb_logger.watch(model, log_graph=False)
 
+    lr_monitor = LearningRateMonitor(logging_interval='epoch')
     
-    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, auto_lr_find=True)
+    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, callbacks=[lr_monitor])
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 

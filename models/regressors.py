@@ -60,7 +60,6 @@ class QM9Regressor(pl.LightningModule):
 
     def on_validation_epoch_end(self):
         self.log("valid_MAE", self.valid_metric, prog_bar=True)
-        self.log("Learning_Rate", self.lr, prog_bar = True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
