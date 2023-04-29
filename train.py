@@ -233,7 +233,7 @@ if __name__ == "__main__":
     wandb_logger.watch(model, log_graph=False)
 
     
-    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs)
+    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, auto_lr_find=True)
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 
