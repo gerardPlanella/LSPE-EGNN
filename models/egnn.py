@@ -3,6 +3,8 @@ import torch.nn as nn
 
 import torch_geometric as tg
 from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
+import torch_geometric.utils as utils
+from torch_geometric.utils import erdos_renyi_graph
 
 class EGNNLayer(MessagePassing):
     """ E(n)-equivariant Message Passing Layer """
@@ -84,9 +86,10 @@ class EGNN(nn.Module):
 
     def forward(self, x, pos, edge_index, batch):
 
-        """
-        ORIGINAL IMPLEMENTATION--> batch dist is changing 
+        
+        # ORIGINAL IMPLEMENTATION--> batch dist is changing 
         x = self.embedder(x)
+        edge_index = erdos_renyi_graph(x.shape[0], 1.0) # added this one to try ->  1.0 specifies the probability of connecting any two nodes with an edge.
 
         dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         edge_attr = dist
@@ -97,10 +100,9 @@ class EGNN(nn.Module):
 
             # Update graph. If it is set to None, then a fully connected graph is implied.
             # dist changes for every batch. Shouldnt it be the same for every
-        
-            if self.radius:
-                edge_index = tg.nn.radius_graph(pos, self.radius, batch)
-                dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
+            # if self.radius:  
+            #     edge_index = tg.nn.radius_graph(pos, self.radius, batch) function does not even work when used.
+            #     dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         
         if self.pooler:
             x = self.pooler(x, batch)
@@ -109,6 +111,8 @@ class EGNN(nn.Module):
 
 
         """
+        Something that i tried regarding the fully connected graph. you can ignore. just for reference
+
 
         x = self.embedder(x)
 
@@ -137,4 +141,6 @@ class EGNN(nn.Module):
             x = self.pooler(x, batch)
         
         x = self.head(x)
+        """
+
         return x
