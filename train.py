@@ -119,9 +119,9 @@ act_fns = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
-    parser.add_argument('--batch_size', type=int, default=32, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=96, metavar='N',
                         help='input batch size for training (default: 32)')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
@@ -133,7 +133,7 @@ if __name__ == "__main__":
                         help='Percentage of Data to use for validation (default: 0.6)')
     parser.add_argument('--test_split', type=float, default=0.2, metavar='S',
                         help='Percentage of Data to use for testing (default: 0.6)')
-    parser.add_argument('--num_workers', type=int, default=1, metavar='N',
+    parser.add_argument('--num_workers', type=int, default=4, metavar='N',
                         help='number of workers for the dataloader')
     parser.add_argument("--dataset", type=str, default="QM9", 
                         help="Dataset to use (QM9, )")
@@ -163,7 +163,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="cpu", 
+    parser.add_argument("--accelerator", type=str, default="gpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
