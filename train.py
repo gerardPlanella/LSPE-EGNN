@@ -119,7 +119,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
     parser.add_argument('--batch_size', type=int, default=32, metavar='N',
                         help='input batch size for training (default: 32)')
-    parser.add_argument('--epochs', type=int, default=2, metavar='N',
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
@@ -131,7 +131,7 @@ if __name__ == "__main__":
                         help='Percentage of Data to use for validation (default: 0.6)')
     parser.add_argument('--test_split', type=float, default=0.2, metavar='S',
                         help='Percentage of Data to use for testing (default: 0.6)')
-    parser.add_argument('--num_workers', type=int, default=4, metavar='N',
+    parser.add_argument('--num_workers', type=int, default=1, metavar='N',
                         help='number of workers for the dataloader')
     parser.add_argument("--dataset", type=str, default="QM9", 
                         help="Dataset to use (QM9, )")
@@ -145,7 +145,7 @@ if __name__ == "__main__":
                         help="Aggregation method for message passing (default(add), mean, max)")           
     parser.add_argument('--weight_decay', type=float, default=1e-16, metavar='N',
                         help='weight decay')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='N',
+    parser.add_argument('--lr', type=float, default=5e-4, metavar='N',
                         help='learning rate')
     parser.add_argument('--radius', type=float, default=None, metavar='N',
                         help='Used when working with Radius Graph (Default None)')
@@ -176,8 +176,6 @@ if __name__ == "__main__":
     properties = dataset_properties[args.dataset]
     dataset_class = datasets[args.dataset]
 
-
-
     assert args.property in properties._member_names_
     args.property = properties[args.property]
 
@@ -186,25 +184,28 @@ if __name__ == "__main__":
     
     pl.seed_everything(args.seed, workers=True)
 
-    dataset = dataset_class(root = args.dataset_path, transform=None, pre_transform=None).shuffle()
+    print("Obtaining Dataset")
+    
+    dataset = dataset_class(root = args.dataset_path).shuffle()
 
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
     #     extended_features = torch.tensor(compute_extended_features(data))
     #     data.x = torch.cat([data.x, extended_features], dim=1)
 
-
+    print("Creating Data Splits")
 
     train_data, valid_data, test_data = split_data(dataset)
-    
-    
-
+    print("Creating DataLoaders")
 
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
     
+    print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)
+
+    print("Creating Model")
 
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
