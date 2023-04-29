@@ -206,7 +206,6 @@ if __name__ == "__main__":
     
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
-    #TODO: Do we want to add arguments for the activation fn, dim and pool?
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
