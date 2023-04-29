@@ -163,3 +163,4 @@ data/
 wandb/
 checkpoints/
 *.out
+LSPE-EGNN/
