@@ -87,11 +87,11 @@ class EGNN(nn.Module):
     def forward(self, x, pos, edge_index, batch):
 
         num_nodes = x.shape[0]
-        edge_index = []
+        edge_index = [] # We dont care about the original edge_index
         #For each batch(molecule) we fully connect its nodes and create a separate edge_index
         for b in range(batch.max().item() + 1):
-            mask = (batch == b).view(-1, 1)
-            indices = torch.arange(num_nodes).view(-1, 1)
+            mask = (batch == b).view(-1, 1).to("cuda")
+            indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
             indices = indices[mask.expand_as(indices)].view(-1)
             edges = torch.cartesian_prod(indices, indices)
             edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
