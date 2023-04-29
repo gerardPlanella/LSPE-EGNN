@@ -17,12 +17,14 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
+"""
 from rdkit import Chem
 from rdkit.Chem import rdchem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.rdchem import HybridizationType
 from torch_geometric.utils import smiles
 from rdkit.Chem import rdchem
+"""
 from torch_geometric.data import Data
 
 

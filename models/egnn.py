@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch_geometric as tg
 from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
 import torch_geometric.utils as utils
-from torch_geometric.utils import erdos_renyi_graph
+from torch_geometric.utils import erdos_renyi_graph, to_dense_batch
 
 class EGNNLayer(MessagePassing):
     """ E(n)-equivariant Message Passing Layer """
@@ -86,7 +86,34 @@ class EGNN(nn.Module):
 
     def forward(self, x, pos, edge_index, batch):
 
-        
+        num_nodes = x.shape[0]
+        edge_index = []
+        #For each batch(molecule) we fully connect its nodes and create a separate edge_index
+        for b in range(batch.max().item() + 1):
+            mask = (batch == b).view(-1, 1)
+            indices = torch.arange(num_nodes).view(-1, 1)
+            indices = indices[mask.expand_as(indices)].view(-1)
+            edges = torch.cartesian_prod(indices, indices)
+            edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
+            edge_index.append(edges)
+        edge_index = torch.cat(edge_index, dim=0).t().contiguous() # We join the separate edge_indexes for each molecule 
+
+        # Compute edge distances
+        dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
+        edge_attr = dist
+
+        # Feedforward through EGNNLayers
+        x = self.embedder(x)
+        for layer in self.layers:
+            x, pos = layer(x, pos, edge_index, edge_attr)
+
+        if self.pooler:
+            x = self.pooler(x, batch)
+
+        x = self.head(x)
+        return x
+    
+        """
         # ORIGINAL IMPLEMENTATION--> batch dist is changing 
         x = self.embedder(x)
         edge_index = erdos_renyi_graph(x.shape[0], 1.0).to("cuda") # added this one to try ->  1.0 specifies the probability of connecting any two nodes with an edge.
@@ -108,7 +135,7 @@ class EGNN(nn.Module):
             x = self.pooler(x, batch)
         
         x = self.head(x)
-
+        """
 
         """
         Something that i tried regarding the fully connected graph. you can ignore. just for reference
