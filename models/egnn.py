@@ -90,7 +90,7 @@ class EGNN(nn.Module):
         # ORIGINAL IMPLEMENTATION--> batch dist is changing 
         x = self.embedder(x)
         edge_index = erdos_renyi_graph(x.shape[0], 1.0) # added this one to try ->  1.0 specifies the probability of connecting any two nodes with an edge.
-
+        # the edge index should be of size  [2, num_nodes * (num_nodes - 1)]-> need to compare with the satoras code to see the dimension of this
         dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         edge_attr = dist
 
@@ -99,7 +99,7 @@ class EGNN(nn.Module):
             
 
             # Update graph. If it is set to None, then a fully connected graph is implied.
-            # dist changes for every batch. Shouldnt it be the same for every
+            
             # if self.radius:  
             #     edge_index = tg.nn.radius_graph(pos, self.radius, batch) function does not even work when used.
             #     dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
