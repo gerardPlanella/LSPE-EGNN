@@ -17,6 +17,8 @@ class QM9Regressor(pl.LightningModule):
         self.epochs = epochs
         self.train_metric = torchmetrics.MeanAbsoluteError()
         self.valid_metric = torchmetrics.MeanAbsoluteError()
+        self.test_metric = torchmetrics.MeanAbsoluteError()
+
 
         self.mean = mean
         self.mad = mad
@@ -41,7 +43,7 @@ class QM9Regressor(pl.LightningModule):
         return loss
 
     def on_train_epoch_end(self):
-        self.log("train MAE", self.train_metric, prog_bar=True)
+        self.log("train_MAE", self.train_metric, prog_bar=True)
 
     def validation_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
@@ -51,16 +53,18 @@ class QM9Regressor(pl.LightningModule):
     def test_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
-        self.valid_metric(pred*self.mad + self.mean, y)
+        self.test_metric(pred*self.mad + self.mean, y)
+
+    def on_test_epoch_end(self):
+        self.log("test_MAE", self.test_metric, prog_bar=True)
 
     def on_validation_epoch_end(self):
-        self.log("valid MAE", self.valid_metric, prog_bar=True),
-        self.log("Learning Rate", self.lr, prog_bar = False)
+        self.log("valid_MAE", self.valid_metric, prog_bar=True)
+        self.log("Learning_Rate", self.lr, prog_bar = False)
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.lr, amsgrad=True, weight_decay=self.weight_decay
-            
         )
 
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(

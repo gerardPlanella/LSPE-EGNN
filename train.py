@@ -17,12 +17,14 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
+"""
 from rdkit import Chem
 from rdkit.Chem import rdchem
 from rdkit.Chem import rdMolDescriptors
 from rdkit.Chem.rdchem import HybridizationType
 from torch_geometric.utils import smiles
 from rdkit.Chem import rdchem
+"""
 from torch_geometric.data import Data
 
 
@@ -117,9 +119,9 @@ act_fns = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
-    parser.add_argument('--batch_size', type=int, default=32, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=96, metavar='N',
                         help='input batch size for training (default: 32)')
-    parser.add_argument('--epochs', type=int, default=2, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
@@ -131,7 +133,7 @@ if __name__ == "__main__":
                         help='Percentage of Data to use for validation (default: 0.6)')
     parser.add_argument('--test_split', type=float, default=0.2, metavar='S',
                         help='Percentage of Data to use for testing (default: 0.6)')
-    parser.add_argument('--num_workers', type=int, default=4, metavar='N',
+    parser.add_argument('--num_workers', type=int, default=3, metavar='N',
                         help='number of workers for the dataloader')
     parser.add_argument("--dataset", type=str, default="QM9", 
                         help="Dataset to use (QM9, )")
@@ -145,7 +147,7 @@ if __name__ == "__main__":
                         help="Aggregation method for message passing (default(add), mean, max)")           
     parser.add_argument('--weight_decay', type=float, default=1e-16, metavar='N',
                         help='weight decay')
-    parser.add_argument('--lr', type=float, default=1e-3, metavar='N',
+    parser.add_argument('--lr', type=float, default=5e-4, metavar='N',
                         help='learning rate')
     parser.add_argument('--radius', type=float, default=None, metavar='N',
                         help='Used when working with Radius Graph (Default None)')
@@ -161,7 +163,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="cpu", 
+    parser.add_argument("--accelerator", type=str, default="gpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -176,8 +178,6 @@ if __name__ == "__main__":
     properties = dataset_properties[args.dataset]
     dataset_class = datasets[args.dataset]
 
-
-
     assert args.property in properties._member_names_
     args.property = properties[args.property]
 
@@ -186,27 +186,29 @@ if __name__ == "__main__":
     
     pl.seed_everything(args.seed, workers=True)
 
-    dataset = dataset_class(root = args.dataset_path, transform=None, pre_transform=None).shuffle()
+    print("Obtaining Dataset")
+    
+    dataset = dataset_class(root = args.dataset_path).shuffle()
 
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
     #     extended_features = torch.tensor(compute_extended_features(data))
     #     data.x = torch.cat([data.x, extended_features], dim=1)
 
-
+    print("Creating Data Splits")
 
     train_data, valid_data, test_data = split_data(dataset)
-    
-    
-
+    print("Creating DataLoaders")
 
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
     
+    print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
-    #TODO: Do we want to add arguments for the activation fn, dim and pool?
+    print("Creating Model")
+
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
@@ -218,7 +220,7 @@ if __name__ == "__main__":
 
 
     # initialise the wandb logger and name your wandb project
-    wandb_logger = WandbLogger(project=args.wandb_project_name)
+    wandb_logger = WandbLogger(project=args.wandb_project_name, log_model=True)
     # Length of data
     wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
     wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
@@ -228,9 +230,12 @@ if __name__ == "__main__":
     wandb_logger.experiment.config["dataset"] = args.dataset
     wandb_logger.experiment.config["property"] = args.property.name
 
+    wandb_logger.watch(model, log_graph=False)
+
     
     trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs)
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 
+    wandb_logger.experiment.unwatch(model)
     wandb.finish()
