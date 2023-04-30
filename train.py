@@ -11,7 +11,7 @@ import torch_geometric.utils as utils
 import pytorch_lightning as pl
 
 from pytorch_lightning.loggers import WandbLogger
-from pytorch_lightning.callbacks import LearningRateMonitor
+from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 import wandb
 
 from models.egnn import EGNN
@@ -221,7 +221,7 @@ if __name__ == "__main__":
 
 
     # initialise the wandb logger and name your wandb project
-    wandb_logger = WandbLogger(project=args.wandb_project_name, log_model=True)
+    wandb_logger = WandbLogger(project=args.wandb_project_name, log_model="all")
     # Length of data
     wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
     wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
@@ -232,10 +232,17 @@ if __name__ == "__main__":
     wandb_logger.experiment.config["property"] = args.property.name
 
     wandb_logger.watch(model, log_graph=False)
-
+    
+    checkpoint_callback = ModelCheckpoint(
+        monitor="valid_MAE", 
+        mode="min",
+        save_last=True,
+        filename='model-{epoch:02d}-{valid_MAE:.2f}',
+        save_top_k=3)
+    
     lr_monitor = LearningRateMonitor(logging_interval='epoch')
     
-    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, callbacks=[lr_monitor])
+    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, callbacks=[lr_monitor, checkpoint_callback])
     trainer.fit(model, train_loader, valid_loader)
     trainer.test(model, test_loader)
 
