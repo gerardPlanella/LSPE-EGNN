@@ -164,7 +164,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="gpu", 
+    parser.add_argument("--accelerator", type=str, default="cpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -204,6 +204,33 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
+
+    def make_everything_connected(loader):
+
+        for step in loader:
+            edge_index = []
+
+            num_nodes = step.x.shape[0]
+            #For each batch(molecule) we fully connect its nodes and create a separate edge_index
+            for b in range(step.batch.max().item() + 1): # for each molecule
+                mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+                indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
+                indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
+                edges = torch.cartesian_prod(indices, indices)
+                edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
+                edges = edges.to(torch.int64)
+                edge_index.append(edges)
+            edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
+            
+            step.edge_index = edge_index
+            
+        return loader
+
+    train_loader = make_everything_connected(train_loader)
+    valid_loader = make_everything_connected(valid_loader)
+    test_loader = make_everything_connected(test_loader)
+
+
     
     print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)

@@ -14,28 +14,30 @@ class EGNNLayer(MessagePassing):
 
         self.message_net = nn.Sequential(nn.Linear(2 * node_features + edge_features, hidden_features),
                                          act(),
-                                         nn.Linear(hidden_features, hidden_features))
+                                         nn.Linear(hidden_features, hidden_features),
+                                         act())
     
         self.update_net = nn.Sequential(nn.Linear(node_features + hidden_features, hidden_features),
                                         act(),
                                         nn.Linear(hidden_features, out_features))
         
-        self.pos_net = nn.Sequential(nn.Linear(hidden_features, hidden_features),
-                                     act(),
-                                     nn.Linear(hidden_features, 1))
+        # self.pos_net = nn.Sequential(nn.Linear(hidden_features, hidden_features), # removed bcs qm9 does not require position update
+        #                              act(),
+        #                              nn.Linear(hidden_features, 1))
+        # nn.init.xavier_uniform_(self.pos_net[-1].weight, gain=0.001)
 
         self.edge_net = nn.Sequential(nn.Linear(hidden_features, 1), nn.Sigmoid())
         
-        nn.init.xavier_uniform_(self.pos_net[-1].weight, gain=0.001)
+        
 
     
 
-    def forward(self, x, pos, edge_index, edge_attr=None):
-
-        x = self.propagate(edge_index, x=x, pos=pos, edge_attr=edge_attr)
+    def forward(self, x, edge_index, edge_attr=None):
+       
+        x = self.propagate(edge_index, x=x, edge_attr=edge_attr)
         return x
 
-    def message(self, x_i, x_j, pos_i, pos_j, edge_attr):
+    def message(self, x_i, x_j,  edge_attr):
         """ Create messages """
         input = [x_i, x_j] if edge_attr is None else [x_i, x_j, edge_attr]
         input = torch.cat(input, dim=-1)
@@ -43,20 +45,23 @@ class EGNNLayer(MessagePassing):
         is_edge = self.edge_net(message) 
         message = message * is_edge 
     
-        pos_message = (pos_i - pos_j)*self.pos_net(message)
-        message = torch.cat((message, pos_message), dim=-1)
+        # pos_message = (pos_i - pos_j)*self.pos_net(message) # we do not update here the pos
+        # message = torch.cat((message, pos_message), dim=-1)
         
+
         return message #m_ij
 
-    def update(self, message, x, pos):
+    def update(self, message, x):
         """ Update node features and positions """
-        node_message, pos_message = message[:, :-self.dim], message[:, -self.dim:]
+        # node_message, pos_message = message[:, :-self.dim], message[:, -self.dim:] # we dont return pos_message in qm9
+        # node_message = message[:, :-self.dim]
+        node_message = message
         # Update node features
         input = torch.cat((x, node_message), dim=-1)
         update = self.update_net(input)
         # Update positions
-        pos += pos_message
-        return update, pos
+        # pos += pos_message # we do not update the positions anymore
+        return update
 
 class EGNN(nn.Module):
     """ E(n)-equivariant Message Passing Network """
@@ -74,7 +79,8 @@ class EGNN(nn.Module):
     
         layers = []
         for i in range(num_layers):
-            layers.append(EGNNLayer(hidden_features, edge_features, hidden_features, hidden_features, dim, aggr, act))
+            new_layer = EGNNLayer(hidden_features, edge_features, hidden_features, hidden_features, dim, aggr, act)
+            layers.append(new_layer)
         self.layers = nn.ModuleList(layers)
 
         self.pooler = pool
@@ -86,18 +92,24 @@ class EGNN(nn.Module):
 
     def forward(self, x, pos, edge_index, batch):
 
+        """
+        We are connecting all the graph nodes when the dataloaders are made.
+
         num_nodes = x.shape[0]
         edge_index = [] # We dont care about the original edge_index
         #For each batch(molecule) we fully connect its nodes and create a separate edge_index
-        for b in range(batch.max().item() + 1):
-            mask = (batch == b).view(-1, 1).to("cuda")
-            indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
-            indices = indices[mask.expand_as(indices)].view(-1)
+        for b in range(batch.max().item() + 1): # for each molecule
+            mask = (batch == b).view(-1, 1)  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+            indices = torch.arange(num_nodes).view(-1, 1) 
+            indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
             edges = torch.cartesian_prod(indices, indices)
             edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
             edge_index.append(edges)
         edge_index = torch.cat(edge_index, dim=0).t().contiguous() # We join the separate edge_indexes for each molecule 
 
+
+
+        """
         # Compute edge distances
         dist = torch.sum((pos[edge_index[1]] - pos[edge_index[0]]).pow(2), dim=-1, keepdim=True).sqrt()
         edge_attr = dist
@@ -105,13 +117,16 @@ class EGNN(nn.Module):
         # Feedforward through EGNNLayers
         x = self.embedder(x)
         for layer in self.layers:
-            x, pos = layer(x, pos, edge_index, edge_attr)
+            # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
+            x = layer(x, edge_index, edge_attr)
 
         if self.pooler:
             x = self.pooler(x, batch)
 
         x = self.head(x)
         return x
+    
+
     
         """
         # ORIGINAL IMPLEMENTATION--> batch dist is changing 
