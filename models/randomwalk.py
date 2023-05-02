@@ -15,7 +15,7 @@ def randomwalk(graph, N=10):
         
     Returns:
         tuple: A tuple containing the following:
-            - torch.Tensor: A 3D tensor of shape (N+1, num_nodes, num_nodes) containing the random walk matrices.
+            - torch.Tensor: A 2D tensor of shape (num_nodes, N) containing the random walk matrix for ending up at the same node at different depths N.
             - torch.Tensor: A 2D tensor of shape (num_nodes, num_nodes) containing the Laplacian matrix of the graph.
     """
     # Convert edge index into adjacency matrix
@@ -48,10 +48,13 @@ def randomwalk(graph, N=10):
 
         randomwalk_matrix.append(randomwalk_i)
 
+    #We want to only know the probabilities of the walk ending up back in the original position for depths k (the diagonals of each random walk matrix)
+    output = np.array([np.diag(matrix) for matrix in randomwalk_matrix]).T
+
     # Calculate graph Laplacian: degree matrix - adjacency matrix
     laplacian = np.diag(np.sum(adj_matrix, axis=0)) - adj_matrix
 
-    return torch.from_numpy(np.array(randomwalk_matrix)), torch.from_numpy(laplacian)
+    return torch.from_numpy(np.array(output)), torch.from_numpy(laplacian)
 
 
 """
