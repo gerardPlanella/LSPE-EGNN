@@ -89,6 +89,7 @@ class EGNN(nn.Module):
         self.head = nn.Sequential(nn.Linear(hidden_features, hidden_features),
                                   act(),
                                   nn.Linear(hidden_features, out_features))
+        self.node_dec = nn.Sequential(nn.Linear(hidden_features, hidden_features), act(), nn.Linear(hidden_features, hidden_features))
 
     def forward(self, x, pos, edge_index, batch):
 
@@ -119,7 +120,10 @@ class EGNN(nn.Module):
         for layer in self.layers:
             # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
             x = layer(x, edge_index, edge_attr)
+        
 
+
+        x = self.node_dec(x)
         if self.pooler:
             x = self.pooler(x, batch)
 
@@ -127,7 +131,7 @@ class EGNN(nn.Module):
         return x
     
 
-    
+
         """
         # ORIGINAL IMPLEMENTATION--> batch dist is changing 
         x = self.embedder(x)
