@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 
 def randomwalk(graph, N = 10):
     #Input: one graph, max depth of random walk
@@ -12,17 +13,31 @@ def randomwalk(graph, N = 10):
         adj_matrix[start_node, end_node] = 1
         adj_matrix[end_node, start_node] = 1
     
-    #conduct random walk by using the property that the nth-potency of the adjacency matrix is a "number of connections in n steps" matrix
-    randomwalk_matrix = []
-    for i in range(1,N+1):
-        randomwalk_i = np.linalg.matrix_power(adj_matrix.copy(), i)
-        print(randomwalk_i)
-        randomwalk_i /= np.sum(randomwalk_i, axis=0)
+    #conduct random walk 
+    #degree matrix as row vector:
+    degrees = np.sum(adj_matrix, axis=0)
+    randomwalk_matrix = [] 
+    #walk n=1 is just adjacency matrix / degrees vector
+    randomwalk_matrix.append(adj_matrix/degrees)
+    for i in range(N):
+        randomwalk_i = np.zeros(adj_matrix.shape)
+        #divide probabilities by number of outgoing edges
+        values = (randomwalk_matrix[-1].T/degrees).T
+        #redistribute position probabilities by the edges
+        for i in range(values.shape[0]):
+            for j in range(values.shape[1]):
+                col_vector = adj_matrix[:, j] * values[i, j]
+                randomwalk_i[:, i] += col_vector
         randomwalk_matrix.append(randomwalk_i)
 
     #the graph laplacian: the degree matrix - adjacancy matrix
     laplacian = np.diag(np.sum(adj_matrix, axis=0)) - adj_matrix
 
 
-    return randomwalk_matrix, laplacian
+    return torch.from_numpy(randomwalk_matrix), torch.from_numpy(laplacian)
 
+"""
+#example graph from https://en.wikipedia.org/wiki/Laplacian_matrix
+example=np.array([[0,0,1,1,2,3,3],[1,4,4,2,3,4,5]])
+randomwalk(example)
+"""
