@@ -16,6 +16,7 @@ import wandb
 
 from models.egnn import EGNN
 from models.regressors import QM9Regressor
+from models.randomwalk import randomwalk
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
 """
@@ -191,6 +192,8 @@ if __name__ == "__main__":
     
     dataset = dataset_class(root = args.dataset_path).shuffle()
 
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
     #     extended_features = torch.tensor(compute_extended_features(data))
@@ -205,6 +208,7 @@ if __name__ == "__main__":
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
 
+
     def make_everything_connected(loader):
 
         for step in loader:
@@ -213,8 +217,8 @@ if __name__ == "__main__":
             num_nodes = step.x.shape[0]
             #For each batch(molecule) we fully connect its nodes and create a separate edge_index
             for b in range(step.batch.max().item() + 1): # for each molecule
-                mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
-                indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
+                mask = (step.batch == b).view(-1, 1).to(device)  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+                indices = torch.arange(num_nodes).view(-1, 1).to(device)
                 indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
                 edges = torch.cartesian_prod(indices, indices)
                 edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
@@ -226,11 +230,11 @@ if __name__ == "__main__":
             
         return loader
 
-    train_loader = make_everything_connected(train_loader)
-    valid_loader = make_everything_connected(valid_loader)
+    # train_loader = make_everything_connected(train_loader)
+    # # valid_loader = make_everything_connected(valid_loader)
     test_loader = make_everything_connected(test_loader)
 
-
+    a = next(iter(test_loader))[0]
     
     print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)

@@ -1,9 +1,6 @@
 import numpy as np
 import torch
 
-import numpy as np
-import torch
-
 def randomwalk(graph, N=10):
     """
     Conducts a random walk on a given graph and returns the random walk matrix and Laplacian matrix.
@@ -34,7 +31,7 @@ def randomwalk(graph, N=10):
     randomwalk_matrix.append(adj_matrix/degrees)
 
     # Conduct random walk for N steps
-    for _ in range(N):
+    for _ in range(N-1):
         randomwalk_i = np.zeros(adj_matrix.shape)
 
         # Divide probabilities by number of outgoing edges
@@ -51,7 +48,8 @@ def randomwalk(graph, N=10):
     # Calculate graph Laplacian: degree matrix - adjacency matrix
     laplacian = np.diag(np.sum(adj_matrix, axis=0)) - adj_matrix
 
-    return torch.from_numpy(np.array(randomwalk_matrix)), torch.from_numpy(laplacian)
+    diagonal_elements = np.array([np.diag(rw_matrix) for rw_matrix in randomwalk_matrix])
+    return torch.from_numpy(diagonal_elements), torch.from_numpy(laplacian)
 
 
 """
