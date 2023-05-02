@@ -164,7 +164,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="cpu", 
+    parser.add_argument("--accelerator", type=str, default="gpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
