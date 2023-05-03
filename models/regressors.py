@@ -5,6 +5,8 @@ import torchmetrics
 import pytorch_lightning as pl
 from dataset.qm9 import QM9Properties
 from models.egnn import EGNN
+from models.egnn_lspe import EGNNLSPE
+from models.randomwalk import randomwalk
 
 class QM9Regressor(pl.LightningModule):
     def __init__(self, model, target:QM9Properties, lr, weight_decay, epochs, mean=0, mad=1):
@@ -29,6 +31,9 @@ class QM9Regressor(pl.LightningModule):
         if isinstance(self.model, EGNN):
             # Don't add distance, as this is done internally
             pred = self.model(graph.x, graph.pos, graph.edge_index, graph.batch)
+        
+        if isinstance(self.model, EGNNLSPE):
+            pred = self.model(graph.x, graph.pos, graph.edge_index, graph.batch, randomwalk(graph)[0])
                     
         return pred
 

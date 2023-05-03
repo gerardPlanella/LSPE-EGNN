@@ -15,6 +15,7 @@ from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 import wandb
 
 from models.egnn import EGNN
+from models.egnn_lspe import EGNNLSPE
 from models.regressors import QM9Regressor
 from models.randomwalk import randomwalk
 from dataset.qm9 import QM9Properties
@@ -159,13 +160,15 @@ if __name__ == "__main__":
                         help='Node Feature size')
     parser.add_argument('--hidden_feature_s', type=int, default=128, metavar='N',
                         help='Hidden Feature size')
+    parser.add_argument('--pos_feature_s', type=int, default=10, metavar='N',
+                        help='Hidden Feature size')
     parser.add_argument('--out_feature_s', type=int, default=1, metavar='N',
                         help='Output Feature size')
     parser.add_argument('--num_layers', type=int, default=7, metavar='N',
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="gpu", 
+    parser.add_argument("--accelerator", type=str, default="cpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -189,7 +192,9 @@ if __name__ == "__main__":
     pl.seed_everything(args.seed, workers=True)
 
     print("Obtaining Dataset")
-    
+    from torch_geometric.transforms import RadiusGraph
+
+    # radius_graph_transform = RadiusGraph(r=1e6)
     dataset = dataset_class(root = args.dataset_path).shuffle()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -209,39 +214,38 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
 
 
-    def make_everything_connected(loader):
+    # def make_everything_connected(loader):
 
-        for step in loader:
-            edge_index = []
+    #     for step in loader:
+    #         edge_index = []
 
-            num_nodes = step.x.shape[0]
-            #For each batch(molecule) we fully connect its nodes and create a separate edge_index
-            for b in range(step.batch.max().item() + 1): # for each molecule
-                mask = (step.batch == b).view(-1, 1).to(device)  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
-                indices = torch.arange(num_nodes).view(-1, 1).to(device)
-                indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
-                edges = torch.cartesian_prod(indices, indices)
-                edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
-                edges = edges.to(torch.int64)
-                edge_index.append(edges)
-            edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
-            
-            step.edge_index = edge_index
-            
-        return loader
+    #         num_nodes = step.x.shape[0]
+    #         #For each batch(molecule) we fully connect its nodes and create a separate edge_index
+    #         for b in range(step.batch.max().item() + 1): # for each molecule
+    #             mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+    #             indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
+    #             indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
+    #             edges = torch.cartesian_prod(indices, indices)
+    #             edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
+    #             edges = edges.to(torch.int64)
+    #             edge_index.append(edges)
+    #         edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
+
+    #         step.edge_index = edge_index
+
+    #     return loader
 
     # train_loader = make_everything_connected(train_loader)
-    # # valid_loader = make_everything_connected(valid_loader)
-    test_loader = make_everything_connected(test_loader)
+    # valid_loader = make_everything_connected(valid_loader)
+    # test_loader = make_everything_connected(test_loader)
 
-    a = next(iter(test_loader))[0]
+    # a = next(iter(test_loader))[0]
     
     print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
     print("Creating Model")
-
-    model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
+    model = EGNNLSPE(args.node_feature_s, args.hidden_feature_s, args.pos_feature_s, args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
     if isinstance(dataset, QM9):

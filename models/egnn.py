@@ -58,7 +58,7 @@ class EGNNLayer(MessagePassing):
         node_message = message
         # Update node features
         input = torch.cat((x, node_message), dim=-1)
-        update = self.update_net(input)
+        update += self.update_net(input)
         # Update positions
         # pos += pos_message # we do not update the positions anymore
         return update

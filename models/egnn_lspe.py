@@ -6,41 +6,43 @@ from torch_geometric.nn import MessagePassing, global_add_pool, global_mean_pool
 import torch_geometric.utils as utils
 from torch_geometric.utils import erdos_renyi_graph, to_dense_batch
 
-class EGNNLayer(MessagePassing):
+class EGNNLSPELayer(MessagePassing):
     """ E(n)-equivariant Message Passing Layer """
-    def __init__(self, node_features, edge_features, hidden_features, out_features, dim, aggr, act):
+    def __init__(self, node_features, edge_features, hidden_features, pos_features, out_features, dim, aggr, act):
         super().__init__(aggr=aggr)
         self.dim = dim
 
-        self.message_net = nn.Sequential(nn.Linear(2 * node_features + edge_features, hidden_features),
+        self.message_net = nn.Sequential(nn.Linear(2 * node_features + 2 * pos_features + edge_features, hidden_features),
                                          act(),
                                          nn.Linear(hidden_features, hidden_features),
                                          act())
     
-        self.update_net = nn.Sequential(nn.Linear(node_features + hidden_features, hidden_features),
+        self.update_node_net = nn.Sequential(nn.Linear(node_features + hidden_features + pos_features, hidden_features),
                                         act(),
                                         nn.Linear(hidden_features, out_features))
         
-        # self.pos_net = nn.Sequential(nn.Linear(hidden_features, hidden_features), # removed bcs qm9 does not require position update
-        #                              act(),
-        #                              nn.Linear(hidden_features, 1))
-        # nn.init.xavier_uniform_(self.pos_net[-1].weight, gain=0.001)
+        self.update_pos_net = nn.Sequential(nn.Linear(pos_features + hidden_features//2, hidden_features),
+                                        act(),
+                                        nn.Linear(hidden_features, out_features))
+
+        self.pos_embedding_net = nn.Linear(2 * pos_features, hidden_features)
 
         self.edge_net = nn.Sequential(nn.Linear(hidden_features, 1), nn.Sigmoid())
         
-        
-
     
 
-    def forward(self, x, edge_index, edge_attr=None):
+    def forward(self, x, edge_index, pos, edge_attr=None):
        
-        x = self.propagate(edge_index, x=x, edge_attr=edge_attr)
+        x = self.propagate(edge_index, x=x, edge_attr=edge_attr, pos = pos)
         return x
 
-    def message(self, x_i, x_j,  edge_attr):
+    def message(self, x_i, x_j, pos_i, pos_j , edge_attr):
         """ Create messages """
-        input = [x_i, x_j] if edge_attr is None else [x_i, x_j, edge_attr]
+
+        input = [x_i, pos_i, x_j, pos_j] if edge_attr is None else [x_i, x_j, pos_i, pos_j, edge_attr]
         input = torch.cat(input, dim=-1)
+
+
         message = self.message_net(input)
         is_edge = self.edge_net(message) 
         message = message * is_edge 
@@ -49,37 +51,42 @@ class EGNNLayer(MessagePassing):
         # message = torch.cat((message, pos_message), dim=-1)
         
 
-        return message #m_ij
+        return message, pos_j #m_ij
 
-    def update(self, message, x):
+    def update(self, message, x, p):
         """ Update node features and positions """
-        # node_message, pos_message = message[:, :-self.dim], message[:, -self.dim:] # we dont return pos_message in qm9
-        # node_message = message[:, :-self.dim]
-        node_message = message
+        node_message, pos_message = torch.split(message, message.size(1) // 2, dim=1) # we dont return pos_message in qm9
         # Update node features
-        input = torch.cat((x, node_message), dim=-1)
-        update = self.update_net(input)
+        node_pos_info = torch.cat((x,p))
+        input = torch.cat((node_pos_info, node_message), dim=-1)
+        node_update += self.update_node_net(input)
+
+        input = torch.cat((p, pos_message), dim = -1)
+        pos_update += self.update_pos_net(input)
         # Update positions
         # pos += pos_message # we do not update the positions anymore
-        return update
+        return node_update, pos_update
 
-class EGNN(nn.Module):
+class EGNNLSPE(nn.Module):
     """ E(n)-equivariant Message Passing Network """
-    def __init__(self, node_features, hidden_features, out_features, num_layers, dim, radius, aggr="mean", act=nn.ReLU, pool=global_add_pool):
+    def __init__(self, node_features, hidden_features, pos_features, out_features, num_layers, dim, radius, aggr="mean", act=nn.ReLU, pool=global_add_pool):
         super().__init__()
         edge_features = 1
         self.dim = dim
         self.radius = radius
 
-        self.embedder = nn.Sequential(nn.Linear(node_features, hidden_features),
+        self.embedder_x = nn.Sequential(nn.Linear(node_features, hidden_features),
                                       act(),
                                       nn.Linear(hidden_features, hidden_features))
         
-       
-    
+        self.embedder_pos = nn.Linear(pos_features, hidden_features)
+
+        hidden_node_features = hidden_features
+        hidden_pos_features = hidden_features
+
         layers = []
         for i in range(num_layers):
-            new_layer = EGNNLayer(hidden_features, edge_features, hidden_features, hidden_features, dim, aggr, act)
+            new_layer = EGNNLSPELayer(hidden_node_features, edge_features, hidden_features, hidden_pos_features, out_features , dim, aggr, act)
             layers.append(new_layer)
         self.layers = nn.ModuleList(layers)
 
@@ -91,7 +98,7 @@ class EGNN(nn.Module):
                                   nn.Linear(hidden_features, out_features))
         self.node_dec = nn.Sequential(nn.Linear(hidden_features, hidden_features), act(), nn.Linear(hidden_features, hidden_features))
 
-    def forward(self, x, pos, edge_index, batch):
+    def forward(self, x, pos, edge_index, batch, pe_init):
 
         """
         We are connecting all the graph nodes when the dataloaders are made.
@@ -116,10 +123,11 @@ class EGNN(nn.Module):
         edge_attr = dist
 
         # Feedforward through EGNNLayers
-        x = self.embedder(x)
+        x = self.embedder_x(x)
+        pe_embed = self.embedder_pos(pe_init)
         for layer in self.layers:
             # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
-            x = layer(x, edge_index, edge_attr)
+            x, pe_embed = layer(x, edge_index, edge_attr, pe_embed)
         
 
 
