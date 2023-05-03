@@ -188,8 +188,15 @@ if __name__ == "__main__":
     pl.seed_everything(args.seed, workers=True)
 
     print("Obtaining Dataset")
-    
-    dataset = dataset_class(root = args.dataset_path).shuffle()
+
+    """
+    Used this locally to obtain the new data. You need to deprecate the torch_geometric to 2.2 and then re-install torch-scatter
+
+    transform_radius = RadiusGraph(r = 1e6)
+    dataset = dataset_class(root = args.dataset_path, pre_transform = transorm_radius)
+    """
+
+    dataset = dataset_class(root = args.dataset_path)
 
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
@@ -204,6 +211,16 @@ if __name__ == "__main__":
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
+
+
+    print("Total number of edges: ", train_data.data.edge_index.shape[1] + valid_data.data.edge_index.shape[1] + test_data.data.edge_index.shape[1])
+
+    """
+    This code was before for manually connecting all the nodes within a molecule. Not working as it should for some reason
+
+
+    print(dataset.data)
+    print(dataset.data.edge_index[1][:100])
 
     def make_everything_connected(loader):
 
@@ -222,6 +239,7 @@ if __name__ == "__main__":
                 edge_index.append(edges)
             edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
             
+            
             step.edge_index = edge_index
             
         return loader
@@ -230,6 +248,12 @@ if __name__ == "__main__":
     valid_loader = make_everything_connected(valid_loader)
     test_loader = make_everything_connected(test_loader)
 
+    a = next(iter(train_loader))[0]
+    print(a.edge_index[0])
+    print(a.edge_index[1])
+    print(a.edge_index.shape)
+
+    """
 
     
     print("Computing Mean & Mad")
