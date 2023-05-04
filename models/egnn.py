@@ -65,7 +65,7 @@ class EGNNLayer(MessagePassing):
 
 class EGNN(nn.Module):
     """ E(n)-equivariant Message Passing Network """
-    def __init__(self, node_features, hidden_features, out_features, num_layers, dim, radius, aggr="mean", act=nn.ReLU, pool=global_add_pool):
+    def __init__(self, node_features, hidden_features, out_features, num_layers, dim, radius, aggr="mean", act=nn.SiLU, pool=global_add_pool):
         super().__init__()
         edge_features = 1
         self.dim = dim
@@ -117,6 +117,9 @@ class EGNN(nn.Module):
 
         # Feedforward through EGNNLayers
         x = self.embedder(x)
+        # embed(cat(x, pe)) - 1 emb -- no need to update any of the params
+        # embed them separetely, update them through net swork - 2
+        
         for layer in self.layers:
             # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
             x = layer(x, edge_index, edge_attr)

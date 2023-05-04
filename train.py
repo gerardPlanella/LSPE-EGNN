@@ -18,6 +18,8 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
+from torch_geometric.transforms import RadiusGraph, Compose
+from torch_geometric.nn import radius_graph
 """
 from rdkit import Chem
 from rdkit.Chem import rdchem
@@ -126,7 +128,7 @@ if __name__ == "__main__":
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
-    parser.add_argument('--dataset_path', type=str, default='./data', metavar='N',
+    parser.add_argument('--dataset_path', type=str, default='./QM9', metavar='N',
                         help='Path to save dataset')
     parser.add_argument('--train_split', type=float, default=0.6, metavar='S',
                         help='Percentage of Data to use for training (default: 0.6)')
@@ -164,7 +166,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="gpu", 
+    parser.add_argument("--accelerator", type=str, default="cpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -188,8 +190,12 @@ if __name__ == "__main__":
     pl.seed_everything(args.seed, workers=True)
 
     print("Obtaining Dataset")
+
+    transform_radius = RadiusGraph(r = 1e6)
+    # transform_radius = Compose([Distance(),RadiusGraph(r=1e6)])
+    # transform_ tg.nn.radius_graph(pos, self.radius, batch)
     
-    dataset = dataset_class(root = args.dataset_path).shuffle()
+    dataset = dataset_class(root = args.dataset_path, pre_transform=transform_radius)
 
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
@@ -201,9 +207,14 @@ if __name__ == "__main__":
     train_data, valid_data, test_data = split_data(dataset)
     print("Creating DataLoaders")
 
+
     train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
+
+    a = next(iter(test_loader))[0]
+    print("hellp")
+
 
     def make_everything_connected(loader):
 
@@ -213,8 +224,8 @@ if __name__ == "__main__":
             num_nodes = step.x.shape[0]
             #For each batch(molecule) we fully connect its nodes and create a separate edge_index
             for b in range(step.batch.max().item() + 1): # for each molecule
-                mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
-                indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
+                mask = (step.batch == b).view(-1, 1)  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+                indices = torch.arange(num_nodes).view(-1, 1)
                 indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
                 edges = torch.cartesian_prod(indices, indices)
                 edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
@@ -223,12 +234,16 @@ if __name__ == "__main__":
             edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
             
             step.edge_index = edge_index
+            y = step.edge_index
+            print("hello")
+        a = next(iter(loader))
+        b = next(iter(loader))
             
         return loader
 
-    train_loader = make_everything_connected(train_loader)
-    valid_loader = make_everything_connected(valid_loader)
-    test_loader = make_everything_connected(test_loader)
+    # train_loader = make_everything_connected(train_loader)
+    # valid_loader = make_everything_connected(valid_loader)
+    # test_loader = make_everything_connected(test_loader)
 
 
     
