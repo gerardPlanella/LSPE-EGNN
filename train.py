@@ -168,7 +168,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="cpu", 
+    parser.add_argument("--accelerator", type=str, default="gpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -192,9 +192,7 @@ if __name__ == "__main__":
     pl.seed_everything(args.seed, workers=True)
 
     print("Obtaining Dataset")
-    from torch_geometric.transforms import RadiusGraph
 
-    # radius_graph_transform = RadiusGraph(r=1e6)
     dataset = dataset_class(root = args.dataset_path).shuffle()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -245,8 +243,11 @@ if __name__ == "__main__":
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
     print("Creating Model")
-    model = EGNNLSPE(args.node_feature_s, args.hidden_feature_s, args.pos_feature_s, args.out_feature_s, 
+    model = EGNN(args.node_feature_s, args.hidden_feature_s,  args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
+
+    # model = EGNNLSPE(args.node_feature_s, args.hidden_feature_s, args.pos_feature_s, args.out_feature_s, 
+    #             args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
     if isinstance(dataset, QM9):
         model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)

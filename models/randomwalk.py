@@ -16,7 +16,7 @@ def randomwalk(graph, N=10):
             - torch.Tensor: A 2D tensor of shape (num_nodes, num_nodes) containing the Laplacian matrix of the graph.
     """
     # Convert edge index into adjacency matrix
-    edge_index = graph["edge_index"].numpy()
+    edge_index = graph["edge_index"].cpu().numpy()
     adj_matrix = np.zeros((np.max(edge_index)+1, np.max(edge_index)+1))
     for i in range(edge_index.shape[1]):
         start_node, end_node = edge_index[:, i]
@@ -51,8 +51,10 @@ def randomwalk(graph, N=10):
     # Calculate graph Laplacian: degree matrix - adjacency matrix
     laplacian = np.diag(np.sum(adj_matrix, axis=0)) - adj_matrix
 
-    diagonal_elements = np.array([np.diag(rw_matrix) for rw_matrix in randomwalk_matrix])
-    return torch.from_numpy(diagonal_elements), torch.from_numpy(laplacian)
+    diagonal_elements = np.array([np.diag(rw_matrix) for rw_matrix in randomwalk_matrix]).T
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    return torch.from_numpy(diagonal_elements).to(device).type(torch.float32), torch.from_numpy(laplacian).to(device).type(torch.float32)
+
 
 
 """

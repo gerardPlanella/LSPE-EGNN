@@ -11,7 +11,10 @@ class EGNNLSPELayer(MessagePassing):
     def __init__(self, node_features, edge_features, hidden_features, pos_features, out_features, dim, aggr, act):
         super().__init__(aggr=aggr)
         self.dim = dim
-
+        self.message_net_input = 2 * node_features + 2 * pos_features + edge_features
+        self.update_net_input = node_features + hidden_features + pos_features
+        self.update_pos_input = pos_features + hidden_features//2
+        self.edge_net_input = hidden_features
         self.message_net = nn.Sequential(nn.Linear(2 * node_features + 2 * pos_features + edge_features, hidden_features),
                                          act(),
                                          nn.Linear(hidden_features, hidden_features),
@@ -21,7 +24,7 @@ class EGNNLSPELayer(MessagePassing):
                                         act(),
                                         nn.Linear(hidden_features, out_features))
         
-        self.update_pos_net = nn.Sequential(nn.Linear(pos_features + hidden_features//2, hidden_features),
+        self.update_pos_net = nn.Sequential(nn.Linear(pos_features + hidden_features, hidden_features),
                                         act(),
                                         nn.Linear(hidden_features, out_features))
 
@@ -32,7 +35,6 @@ class EGNNLSPELayer(MessagePassing):
     
 
     def forward(self, x, edge_index, pos, edge_attr=None):
-       
         x = self.propagate(edge_index, x=x, edge_attr=edge_attr, pos = pos)
         return x
 
@@ -49,23 +51,26 @@ class EGNNLSPELayer(MessagePassing):
     
         # pos_message = (pos_i - pos_j)*self.pos_net(message) # we do not update here the pos
         # message = torch.cat((message, pos_message), dim=-1)
-        
+        message_pos_j = torch.cat((message,pos_j), dim = -1)
 
-        return message, pos_j #m_ij
+        return message_pos_j #m_ij
 
-    def update(self, message, x, p):
+    def update(self, message, x, pos):
         """ Update node features and positions """
-        node_message, pos_message = torch.split(message, message.size(1) // 2, dim=1) # we dont return pos_message in qm9
+        node_message, pos_message = torch.split(message, message.size(1) // 2, dim=1)
+        print(x)
+        print(x.size())
         # Update node features
-        node_pos_info = torch.cat((x,p))
-        input = torch.cat((node_pos_info, node_message), dim=-1)
-        node_update += self.update_node_net(input)
+        node_pos_info = torch.cat((x,pos), dim =-1)
+        input_node = torch.cat((node_pos_info, node_message), dim=-1)
+        x += self.update_node_net(input_node)
 
-        input = torch.cat((p, pos_message), dim = -1)
-        pos_update += self.update_pos_net(input)
+        input_pos = torch.cat((pos, pos_message), dim = -1)
+        pos += self.update_pos_net(input_pos)
         # Update positions
         # pos += pos_message # we do not update the positions anymore
-        return node_update, pos_update
+
+        return x, pos
 
 class EGNNLSPE(nn.Module):
     """ E(n)-equivariant Message Passing Network """
@@ -123,11 +128,12 @@ class EGNNLSPE(nn.Module):
         edge_attr = dist
 
         # Feedforward through EGNNLayers
+
         x = self.embedder_x(x)
         pe_embed = self.embedder_pos(pe_init)
         for layer in self.layers:
             # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
-            x, pe_embed = layer(x, edge_index, edge_attr, pe_embed)
+            x, pe_embed = layer(x, edge_index, pe_embed, edge_attr)
         
 
 
