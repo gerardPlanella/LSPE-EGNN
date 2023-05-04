@@ -14,10 +14,10 @@ from pytorch_lightning.loggers import WandbLogger
 from pytorch_lightning.callbacks import LearningRateMonitor, ModelCheckpoint
 import wandb
 
+from models.randomwalk import randomwalk
 from models.egnn import EGNN
 from models.egnn_lspe import EGNNLSPE
 from models.regressors import QM9Regressor
-from models.randomwalk import randomwalk
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
 """
@@ -44,23 +44,18 @@ def split_data(data):
 '''
 It returns for all the features 0 so we will not use it for now. There is something called smiles
 that can be used somehow to get those.
-
 def get_atom_features(atom):
     # atomic_num = atom.GetAtomicNum()
     hybridization = atom.GetHybridization().real
     is_aromatic = atom.GetIsAromatic()
     chiral_tag = atom.GetChiralTag().real
     formal_charge = atom.GetFormalCharge()
-
     return [hybridization, is_aromatic, chiral_tag, formal_charge]
-
 def mol_from_data(data):
     mol = rdchem.EditableMol(rdchem.Mol())
-
     # Add atoms
     for z in data.z:
         mol.AddAtom(rdchem.Atom(int(z)))
-
     # Add bonds
     edge_index = data.edge_index.numpy()
     for i in range(edge_index.shape[1]):
@@ -68,35 +63,25 @@ def mol_from_data(data):
         if atom1 < atom2:
             bond_type = rdchem.BondType.SINGLE
             mol.AddBond(int(atom1), int(atom2), bond_type)
-
     # Finalize the molecule
     mol = mol.GetMol()
     return mol
-
-
-
 def compute_extended_features(data):
     mol = Chem.RWMol()  # Create an empty editable molecule
-
     # Add atoms to the molecule
     for charge in data.z.tolist():
         atom = Chem.Atom(int(charge))
         mol.AddAtom(atom)
-
     # Add bonds to the molecule
     for edge_indices in data.edge_index.transpose(0, 1).tolist():
         atom1, atom2 = edge_indices
         if not mol.GetBondBetweenAtoms(atom1, atom2):
             mol.AddBond(atom1, atom2, Chem.rdchem.BondType.SINGLE)
-
     # Compute the features for each atom in the molecule
     atom_features = []
-
     for atom in mol.GetAtoms():
         atom_features.append(get_atom_features(atom))
-
     return atom_features
-
 '''
 
 
@@ -161,7 +146,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_feature_s', type=int, default=128, metavar='N',
                         help='Hidden Feature size')
     parser.add_argument('--pos_feature_s', type=int, default=10, metavar='N',
-                        help='Hidden Feature size')
+                        help='Size of initial positional embeddings')
     parser.add_argument('--out_feature_s', type=int, default=1, metavar='N',
                         help='Output Feature size')
     parser.add_argument('--num_layers', type=int, default=7, metavar='N',
@@ -193,9 +178,13 @@ if __name__ == "__main__":
 
     print("Obtaining Dataset")
 
-    dataset = dataset_class(root = args.dataset_path).shuffle()
+    """
+    Used this locally to obtain the new data. You need to deprecate the torch_geometric to 2.2 and then re-install torch-scatter
+    transform_radius = RadiusGraph(r = 1e6)
+    dataset = dataset_class(root = args.dataset_path, pre_transform = transorm_radius)
+    """
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dataset = dataset_class(root = args.dataset_path)
 
 
     # for data in dataset:   all zeros--> deleted for now. used to get the extra features
@@ -212,42 +201,51 @@ if __name__ == "__main__":
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
 
 
-    # def make_everything_connected(loader):
+    print("Total number of edges: ", train_data.data.edge_index.shape[1] + valid_data.data.edge_index.shape[1] + test_data.data.edge_index.shape[1])
 
-    #     for step in loader:
-    #         edge_index = []
+    """
+    This code was before for manually connecting all the nodes within a molecule. Not working as it should for some reason
+    print(dataset.data)
+    print(dataset.data.edge_index[1][:100])
+    def make_everything_connected(loader):
+        for step in loader:
+            edge_index = []
+            num_nodes = step.x.shape[0]
+            #For each batch(molecule) we fully connect its nodes and create a separate edge_index
+            for b in range(step.batch.max().item() + 1): # for each molecule
+                mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
+                indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
+                indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
+                edges = torch.cartesian_prod(indices, indices)
+                edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
+                edges = edges.to(torch.int64)
+                edge_index.append(edges)
+            edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
+            
+            
+            step.edge_index = edge_index
+            
+        return loader
+    train_loader = make_everything_connected(train_loader)
+    valid_loader = make_everything_connected(valid_loader)
+    test_loader = make_everything_connected(test_loader)
+    a = next(iter(train_loader))[0]
+    print(a.edge_index[0])
+    print(a.edge_index[1])
+    print(a.edge_index.shape)
+    """
 
-    #         num_nodes = step.x.shape[0]
-    #         #For each batch(molecule) we fully connect its nodes and create a separate edge_index
-    #         for b in range(step.batch.max().item() + 1): # for each molecule
-    #             mask = (step.batch == b).view(-1, 1).to("cuda")  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
-    #             indices = torch.arange(num_nodes).view(-1, 1).to("cuda")
-    #             indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
-    #             edges = torch.cartesian_prod(indices, indices)
-    #             edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
-    #             edges = edges.to(torch.int64)
-    #             edge_index.append(edges)
-    #         edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
-
-    #         step.edge_index = edge_index
-
-    #     return loader
-
-    # train_loader = make_everything_connected(train_loader)
-    # valid_loader = make_everything_connected(valid_loader)
-    # test_loader = make_everything_connected(test_loader)
-
-    # a = next(iter(test_loader))[0]
     
     print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
     print("Creating Model")
-    model = EGNN(args.node_feature_s, args.hidden_feature_s,  args.out_feature_s, 
-                args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
 
-    # model = EGNNLSPE(args.node_feature_s, args.hidden_feature_s, args.pos_feature_s, args.out_feature_s, 
-    #             args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
+    model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
+                args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
+    
+    model = EGNNLSPE(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, args.pos_feature_s, 
+                args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
     if isinstance(dataset, QM9):
         model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
