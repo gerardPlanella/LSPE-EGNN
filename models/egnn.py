@@ -122,7 +122,7 @@ class EGNN(nn.Module):
         
         for layer in self.layers:
             # x, pos = layer(x, pos, edge_index, edge_attr) # we do not return the pos anymore
-            x = layer(x, edge_index, edge_attr)
+            x = x + layer(x, edge_index, edge_attr)
         
 
 

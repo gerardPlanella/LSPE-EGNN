@@ -53,8 +53,10 @@ def regression(loaders, metrics, model, args, wandb_logger):
 
     mean = metrics[0]
     mad = metrics[1]
+    mad = mad.to(device)
+    mean = mean.to(device)
 
-    metric = torchmetrics.MeanAbsoluteError()
+    metric = torchmetrics.MeanAbsoluteError().to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr, amsgrad=True, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs-1, verbose=True)
 
@@ -66,7 +68,7 @@ def regression(loaders, metrics, model, args, wandb_logger):
     epoch_train_mae = []
     epoch_valid_mae = []
 
-    for idx_epoch, epoch in tqdm(enumerate(range(args.epochs))):
+    for idx_epoch, epoch in enumerate(range(args.epochs)):
 
         # train loop
 
@@ -74,11 +76,12 @@ def regression(loaders, metrics, model, args, wandb_logger):
         epoch_loss = 0
         train_mae = 0
 
-        for idx_train, batch in tqdm(enumerate(train_loader)):
+        for idx_train, batch in enumerate(train_loader):
+            batch.to(device)
 
             pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
-            target = get_target(batch)
-
+            target = get_target(batch).to(device)
+            
             loss = F.l1_loss(pred, (target-mean)/mad)
             mae = metric(pred*mad + mean, target)
 
@@ -87,72 +90,73 @@ def regression(loaders, metrics, model, args, wandb_logger):
             optimizer.step()
             
 
-            epoch_loss += loss.item()
-            train_mae += mae.item()
+            epoch_loss = epoch_loss + loss.item()
+            train_mae = train_mae + mae.item()
 
-        epoch_loss /= (idx_train+1)
-        train_mae /= (idx_train+1)
+
+        epoch_loss = epoch_loss/(idx_train+1)
+        train_mae = train_mae/(idx_train+1)
         
         epoch_train_loss.append(epoch_loss)
         epoch_train_mae.append(train_mae)
-        print("train ended")
+        
 
         
         model.eval()
         valid_mae = 0
+        with torch.no_grad():
+            for index_valid, batch in enumerate(valid_loader):
+                batch.to(device)
+                
+                pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
+                target = get_target(batch).to(device)
+                
+                mae = metric(pred*mad + mean, target)
+                valid_mae = valid_mae + mae
 
-        for index_valid, batch in tqdm(enumerate(valid_loader)):
+            valid_mae = valid_mae/(index_valid+1)
+            epoch_valid_mae.append(valid_mae)
             
-            pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
-            target = get_target(batch)
-
-            mae = metric(pred*mad + mean, target)
-            valid_mae += mae
-
-        valid_mae /= (index_valid+1)
-        epoch_valid_mae.append(valid_mae)
     
-    # wandb_logger.log({"Train Loss":epoch_loss, "Train MAE": train_mae, "Valid MAE": valid_mae, "Learning Rate": optimizer.param_groups[-1]['lr']})
-    scheduler.step() # after every epoch perform lr scheduling
-    
-
+        wandb_logger.log({"Train Loss":epoch_loss, "Train MAE": train_mae, "Valid MAE": valid_mae, "Learning Rate": optimizer.param_groups[-1]['lr']})
+        scheduler.step() # after every epoch perform lr scheduling
         
-        
-    if valid_mae < min(epoch_valid_mae):
-        # Save the model if the validation loss is the best so far
-        filename = './checkpoints/model-{epoch:02d}'
+        filename = "./checkpoints/model_epoch_" + str(epoch) +".pt"
         torch.save(model.state_dict(), filename)
-        last_saved = filename
+        print("model saved")
+    
+
+        
 
         # Remove the oldest weights file if more than 3 checkpoints have been saved
         checkpoints = glob.glob('./checkpoints/*')
-        if len(checkpoints) > 2:
+        if len(checkpoints) > 50:
             oldest_checkpoint = sorted(checkpoints, key=os.path.getctime)[0]
             os.remove(oldest_checkpoint)
-    print("valid_ended")
+    
             
 
 
     # test at last epoch   
-    model.load_state_dict(torch.load(last_saved))
+
     model.eval()
     test_mae = 0
-    
-    for idx_test, batch in enumerate(test_loader):
-        
-        pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
-        target = get_target(batch)
+    with torch.no_grad():
+        for idx_test, batch in enumerate(test_loader):
+            batch.to(device)
+            pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
+            target = get_target(batch).to(device)
 
-        mae = metric(pred*mad + mean, target)
-        test_mae += mae
+            mae = metric(pred*mad + mean, target)
+            test_mae = test_mae + mae
 
-    test_mae /= (idx_test+1)
+        test_mae = test_mae/(idx_test+1)
     print("test ended")
-    # wandb_logger.log({"Test Mae: ", test_mae})
+    wandb_logger.log({"Test Mae: ", test_mae})
 
 
-    # wandb_logger.experiment.unwatch(model)
-    # wandb.finish()
+    
+    wandb.finish()
 
 
 

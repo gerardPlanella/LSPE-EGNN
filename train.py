@@ -61,7 +61,7 @@ act_fns = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
-    parser.add_argument('--batch_size', type=int, default=48, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=96, metavar='N',
                         help='input batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
@@ -105,7 +105,7 @@ if __name__ == "__main__":
                         help='Number of Layers')
     parser.add_argument("--wandb_project_name", type=str, default="LSPE-EGNN", 
                         help="Project name for Wandb")
-    parser.add_argument("--accelerator", type=str, default="cpu", 
+    parser.add_argument("--accelerator", type=str, default="gpu", 
                         help="Type of Hardware to run on (cpu, gpu, tpu, ...)")
     
 
@@ -140,9 +140,10 @@ if __name__ == "__main__":
 
     train_data, valid_data, test_data = split_data(dataset)
     print("Creating DataLoaders")
+    print("Total number of edges: ", train_data.data.edge_index.shape[1] + valid_data.data.edge_index.shape[1] + test_data.data.edge_index.shape[1])
 
 
-    train_loader = DataLoader(train_data[:10000], batch_size = args.batch_size, num_workers = args.num_workers)
+    train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
 
@@ -173,20 +174,33 @@ if __name__ == "__main__":
 
     # initialise the wandb logger and name your wandb project
     # wandb_logger = WandbLogger(project=args.wandb_project_name, log_model="all")
-    # # Length of data
+    # run = wandb.init(project="pytorch_imp")
+    # Track hyperparameters and run metadata
+
+    # Length of data
     
     # wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
     # wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
     # wandb_logger.experiment.config["Length of Test Data"] = len(test_data)
 
-    # # add your batch size to the wandb config
+
+    # add your batch size to the wandb config
     # wandb_logger.experiment.config["dataset"] = args.dataset
     # wandb_logger.experiment.config["property"] = args.property.name
 
-    # pytorch_total_params = sum(p.numel() for p in model.parameters())
+    pytorch_total_params = sum(p.numel() for p in model.parameters())
+    config = {"model params": pytorch_total_params,"property":args.property}
+    run = wandb.init(project="pytorch_imp", config = config)
+
+
     # wandb_logger.experiment.config["model params"] = pytorch_total_params
     # wandb_logger.watch(model, log_graph=False)
-    regression(loaders, metrics, model, args, None)
+
+
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    model.to(device)
+
+    regression(loaders, metrics, model, args, wandb)
     
     # checkpoint_callback = ModelCheckpoint(
     #     monitor="valid_MAE", 
