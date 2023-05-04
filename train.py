@@ -18,7 +18,7 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
-from torch_geometric.transforms import RadiusGraph
+from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, Compose
 from torch_geometric.nn import radius_graph
 """
 from rdkit import Chem
@@ -29,6 +29,7 @@ from torch_geometric.utils import smiles
 from rdkit.Chem import rdchem
 """
 from torch_geometric.data import Data
+from pytorch_train import *
 
 
 def split_data(data):
@@ -39,68 +40,6 @@ def split_data(data):
     test_split = data[118000:]
 
     return train_split, dev_split, test_split
-
-
-'''
-It returns for all the features 0 so we will not use it for now. There is something called smiles
-that can be used somehow to get those.
-
-def get_atom_features(atom):
-    # atomic_num = atom.GetAtomicNum()
-    hybridization = atom.GetHybridization().real
-    is_aromatic = atom.GetIsAromatic()
-    chiral_tag = atom.GetChiralTag().real
-    formal_charge = atom.GetFormalCharge()
-
-    return [hybridization, is_aromatic, chiral_tag, formal_charge]
-
-def mol_from_data(data):
-    mol = rdchem.EditableMol(rdchem.Mol())
-
-    # Add atoms
-    for z in data.z:
-        mol.AddAtom(rdchem.Atom(int(z)))
-
-    # Add bonds
-    edge_index = data.edge_index.numpy()
-    for i in range(edge_index.shape[1]):
-        atom1, atom2 = edge_index[:, i]
-        if atom1 < atom2:
-            bond_type = rdchem.BondType.SINGLE
-            mol.AddBond(int(atom1), int(atom2), bond_type)
-
-    # Finalize the molecule
-    mol = mol.GetMol()
-    return mol
-
-
-
-def compute_extended_features(data):
-    mol = Chem.RWMol()  # Create an empty editable molecule
-
-    # Add atoms to the molecule
-    for charge in data.z.tolist():
-        atom = Chem.Atom(int(charge))
-        mol.AddAtom(atom)
-
-    # Add bonds to the molecule
-    for edge_indices in data.edge_index.transpose(0, 1).tolist():
-        atom1, atom2 = edge_indices
-        if not mol.GetBondBetweenAtoms(atom1, atom2):
-            mol.AddBond(atom1, atom2, Chem.rdchem.BondType.SINGLE)
-
-    # Compute the features for each atom in the molecule
-    atom_features = []
-
-    for atom in mol.GetAtoms():
-        atom_features.append(get_atom_features(atom))
-
-    return atom_features
-
-'''
-
-
-
 
 datasets = {
     "QM9": QM9
@@ -122,13 +61,13 @@ act_fns = {
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='EGNN Training Script')
-    parser.add_argument('--batch_size', type=int, default=96, metavar='N',
+    parser.add_argument('--batch_size', type=int, default=48, metavar='N',
                         help='input batch size for training (default: 32)')
     parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='number of epochs to train (default: 10)')
     parser.add_argument('--seed', type=int, default=42, metavar='S',
                         help='random seed (default: 42)')
-    parser.add_argument('--dataset_path', type=str, default='./QM9', metavar='N',
+    parser.add_argument('--dataset_path', type=str, default='./data', metavar='N',
                         help='Path to save dataset')
     parser.add_argument('--train_split', type=float, default=0.6, metavar='S',
                         help='Percentage of Data to use for training (default: 0.6)')
@@ -191,16 +130,11 @@ if __name__ == "__main__":
 
     print("Obtaining Dataset")
 
-    transform_radius = RadiusGraph(r = 1e6)
-    # transform_radius = Compose([Distance(),RadiusGraph(r=1e6)])
-    # transform_ tg.nn.radius_graph(pos, self.radius, batch)
-    
-    dataset = dataset_class(root = args.dataset_path, pre_transform=transform_radius)
+    # transform_radius = RadiusGraph(r = 1e6)
+    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
 
+    dataset = dataset_class(root = args.dataset_path, pre_transform=t_compose)
 
-    # for data in dataset:   all zeros--> deleted for now. used to get the extra features
-    #     extended_features = torch.tensor(compute_extended_features(data))
-    #     data.x = torch.cat([data.x, extended_features], dim=1)
 
     print("Creating Data Splits")
 
@@ -208,45 +142,11 @@ if __name__ == "__main__":
     print("Creating DataLoaders")
 
 
-    train_loader = DataLoader(train_data, batch_size = args.batch_size, num_workers = args.num_workers)
+    train_loader = DataLoader(train_data[:10000], batch_size = args.batch_size, num_workers = args.num_workers)
     valid_loader = DataLoader(valid_data, batch_size = args.batch_size, num_workers = args.num_workers)
     test_loader = DataLoader(test_data, batch_size = args.batch_size, num_workers = args.num_workers)
 
-    a = next(iter(test_loader))[0]
-    print("hellp")
 
-
-    def make_everything_connected(loader):
-
-        for step in loader:
-            edge_index = []
-
-            num_nodes = step.x.shape[0]
-            #For each batch(molecule) we fully connect its nodes and create a separate edge_index
-            for b in range(step.batch.max().item() + 1): # for each molecule
-                mask = (step.batch == b).view(-1, 1)  # check whether it is that specific molecule, mask: tensor (num_nodes, 1), true if node is from molecule b
-                indices = torch.arange(num_nodes).view(-1, 1)
-                indices = indices[mask.expand_as(indices)].view(-1) # indexes of the node of the current molecule
-                edges = torch.cartesian_prod(indices, indices)
-                edges = edges[edges[:, 0] != edges[:, 1]]  # Remove self-edges 
-                edges = edges.to(torch.int64)
-                edge_index.append(edges)
-            edge_index = torch.cat(edge_index, dim=0).t().contiguous().to(torch.int64)
-            
-            step.edge_index = edge_index
-            y = step.edge_index
-            print("hello")
-        a = next(iter(loader))
-        b = next(iter(loader))
-            
-        return loader
-
-    # train_loader = make_everything_connected(train_loader)
-    # valid_loader = make_everything_connected(valid_loader)
-    # test_loader = make_everything_connected(test_loader)
-
-
-    
     print("Computing Mean & Mad")
     mean, mad = get_mean_and_mad(train_loader, args.property)
 
@@ -255,38 +155,51 @@ if __name__ == "__main__":
     model = EGNN(args.node_feature_s, args.hidden_feature_s, args.out_feature_s, 
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
-    if isinstance(dataset, QM9):
-        model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
-    else:
-        #If we implement multiple datasets we can add more type checks
-        raise NotImplementedError
+
+    loaders = [train_loader, valid_loader, test_loader]
+    metrics = [mean, mad]
+
+    
+
+
+
+
+    # if isinstance(dataset, QM9):
+    #     model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
+    # else:
+    #     #If we implement multiple datasets we can add more type checks
+    #     raise NotImplementedError
 
 
     # initialise the wandb logger and name your wandb project
-    wandb_logger = WandbLogger(project=args.wandb_project_name, log_model="all")
-    # Length of data
-    wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
-    wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
-    wandb_logger.experiment.config["Length of Test Data"] = len(test_data)
-
-    # add your batch size to the wandb config
-    wandb_logger.experiment.config["dataset"] = args.dataset
-    wandb_logger.experiment.config["property"] = args.property.name
-
-    wandb_logger.watch(model, log_graph=False)
+    # wandb_logger = WandbLogger(project=args.wandb_project_name, log_model="all")
+    # # Length of data
     
-    checkpoint_callback = ModelCheckpoint(
-        monitor="valid_MAE", 
-        mode="min",
-        save_last=True,
-        filename='model-{epoch:02d}-{valid_MAE:.2f}',
-        save_top_k=3)
-    
-    lr_monitor = LearningRateMonitor(logging_interval='epoch')
-    
-    trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, callbacks=[lr_monitor, checkpoint_callback])
-    trainer.fit(model, train_loader, valid_loader)
-    trainer.test(model, test_loader)
+    # wandb_logger.experiment.config["Length of Train Data"] = len(train_data)
+    # wandb_logger.experiment.config["Length of Dev Data"] = len(valid_data)
+    # wandb_logger.experiment.config["Length of Test Data"] = len(test_data)
 
-    wandb_logger.experiment.unwatch(model)
-    wandb.finish()
+    # # add your batch size to the wandb config
+    # wandb_logger.experiment.config["dataset"] = args.dataset
+    # wandb_logger.experiment.config["property"] = args.property.name
+
+    # pytorch_total_params = sum(p.numel() for p in model.parameters())
+    # wandb_logger.experiment.config["model params"] = pytorch_total_params
+    # wandb_logger.watch(model, log_graph=False)
+    regression(loaders, metrics, model, args, None)
+    
+    # checkpoint_callback = ModelCheckpoint(
+    #     monitor="valid_MAE", 
+    #     mode="min",
+    #     save_last=True,
+    #     filename='model-{epoch:02d}-{valid_MAE:.2f}',
+    #     save_top_k=3)
+    
+    # lr_monitor = LearningRateMonitor(logging_interval='epoch')
+    
+    # trainer = pl.Trainer(logger=wandb_logger, accelerator=args.accelerator, max_epochs=args.epochs, callbacks=[lr_monitor, checkpoint_callback])
+    # trainer.fit(model, train_loader, valid_loader)
+    # trainer.test(model, test_loader)
+
+    # wandb_logger.experiment.unwatch(model)
+    # wandb.finish()
