@@ -18,7 +18,7 @@ from models.egnn import EGNN
 from models.regressors import QM9Regressor
 from dataset.qm9 import QM9Properties
 from dataset.utils import get_mean_and_mad
-from torch_geometric.transforms import RadiusGraph, Compose
+from torch_geometric.transforms import RadiusGraph
 from torch_geometric.nn import radius_graph
 """
 from rdkit import Chem
