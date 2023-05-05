@@ -43,28 +43,31 @@ class QM9Regressor(pl.LightningModule):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
         loss = F.l1_loss(pred, (y - self.mean)/self.mad)
-        self.train_metric(pred*self.mad + self.mean, y)
+        train_mae = self.train_metric(pred*self.mad + self.mean, y)
+        self.log("train_MAE", train_mae, prog_bar=True, on_epoch=True, on_step=False)
         return loss
-
-    def on_train_epoch_end(self):
-        self.log("train_MAE", self.train_metric, prog_bar=True)
 
     def validation_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
-        self.valid_metric(pred*self.mad + self.mean, y)
+        val_mae = self.valid_metric(pred*self.mad + self.mean, y)
+        self.log("valid_MAE", val_mae, prog_bar=True, on_epoch=True, on_step=False)
 
     def test_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
-        self.test_metric(pred*self.mad + self.mean, y)
+        test_mae = self.test_metric(pred*self.mad + self.mean, y)
+        self.log("test_MAE", test_mae, prog_bar=True, on_epoch=True, on_step=False)
+    """
+    def on_train_epoch_end(self):
+        self.log("train_MAE", self.train_metric, prog_bar=True)
 
     def on_test_epoch_end(self):
         self.log("test_MAE", self.test_metric, prog_bar=True)
 
     def on_validation_epoch_end(self):
         self.log("valid_MAE", self.valid_metric, prog_bar=True)
-
+    """
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
             self.parameters(), lr=self.lr, amsgrad=True, weight_decay=self.weight_decay
