@@ -131,9 +131,11 @@ if __name__ == "__main__":
     print("Obtaining Dataset")
 
     # transform_radius = RadiusGraph(r = 1e6)
-    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
+    # t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
 
-    dataset = dataset_class(root = args.dataset_path, pre_transform=t_compose)
+    t_compose = Compose([RadiusGraph(r = 1e6)])
+    # dataset = dataset_class(root = args.dataset_path, pre_transform=t_compose)
+    dataset = dataset_class(root = "./data", pre_transform=t_compose)
 
 
     print("Creating Data Splits")

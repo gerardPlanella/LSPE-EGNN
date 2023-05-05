@@ -82,8 +82,8 @@ def regression(loaders, metrics, model, args, wandb_logger):
             pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
             target = get_target(batch).to(device)
             
-            loss = F.l1_loss(pred, (target-mean)/mad)
-            mae = metric(pred*mad + mean, target)
+            loss = F.l1_loss(pred, (target-mean)/mad, reduction = "sum")
+            mae = F.l1_loss(pred*mad + mean, target, reduction = "sum")
 
             optimizer.zero_grad()
             loss.backward()
@@ -94,8 +94,13 @@ def regression(loaders, metrics, model, args, wandb_logger):
             train_mae = train_mae + mae.item()
 
 
-        epoch_loss = epoch_loss/(idx_train+1)
-        train_mae = train_mae/(idx_train+1)
+        
+        # print(epoch_loss)
+
+ 
+        epoch_loss = epoch_loss/len(train_loader.dataset)
+
+        train_mae = train_mae/len(train_loader.dataset)
         
         epoch_train_loss.append(epoch_loss)
         epoch_train_mae.append(train_mae)
@@ -111,10 +116,11 @@ def regression(loaders, metrics, model, args, wandb_logger):
                 pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
                 target = get_target(batch).to(device)
                 
-                mae = metric(pred*mad + mean, target)
+                mae = F.l1_loss(pred*mad + mean, target, reduction = "sum")
                 valid_mae = valid_mae + mae
 
-            valid_mae = valid_mae/(index_valid+1)
+            valid_mae = valid_mae/len(valid_loader.dataset)
+            
             epoch_valid_mae.append(valid_mae)
             
     
@@ -147,10 +153,10 @@ def regression(loaders, metrics, model, args, wandb_logger):
             pred = model(batch.x, batch.pos, batch.edge_index, batch.batch).squeeze()
             target = get_target(batch).to(device)
 
-            mae = metric(pred*mad + mean, target)
+            mae = F.l1_loss(pred*mad + mean, target, reduction = "sum")
             test_mae = test_mae + mae
 
-        test_mae = test_mae/(idx_test+1)
+        test_mae = test_mae/len(test_loader.dataset)
     print("test ended")
     wandb_logger.log({"Test Mae: ", test_mae})
 
