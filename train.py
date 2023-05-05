@@ -249,7 +249,7 @@ if __name__ == "__main__":
                 args.num_layers, args.dim, args.radius, aggr = args.aggregation, act=act_fns[args.act_fn], pool=pools[args.pooling])
     
     if isinstance(dataset, QM9):
-        model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs)
+        model = QM9Regressor(model, args.property, lr=args.lr, weight_decay=args.weight_decay, mean=mean, mad=mad, epochs = args.epochs, batch_size = args.batch_size)
     else:
         #If we implement multiple datasets we can add more type checks
         raise NotImplementedError

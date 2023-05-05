@@ -9,7 +9,7 @@ from models.egnn_lspe import EGNNLSPE
 from models.randomwalk import randomwalk
 
 class QM9Regressor(pl.LightningModule):
-    def __init__(self, model, target:QM9Properties, lr, weight_decay, epochs, mean=0, mad=1):
+    def __init__(self, model, target:QM9Properties, lr, weight_decay, epochs, mean=0, mad=1, batch_size = 96):
         super().__init__()
         self.model = model
         assert target in QM9Properties
@@ -20,6 +20,7 @@ class QM9Regressor(pl.LightningModule):
         self.train_metric = torchmetrics.MeanAbsoluteError()
         self.valid_metric = torchmetrics.MeanAbsoluteError()
         self.test_metric = torchmetrics.MeanAbsoluteError()
+        self.batch_size = batch_size
 
 
         self.mean = mean
@@ -44,20 +45,20 @@ class QM9Regressor(pl.LightningModule):
         y = self.get_target(graph)
         loss = F.l1_loss(pred, (y - self.mean)/self.mad)
         train_mae = self.train_metric(pred*self.mad + self.mean, y)
-        self.log("train_MAE", train_mae, prog_bar=True, on_epoch=True, on_step=False)
+        self.log("train_MAE", train_mae, prog_bar=True, on_epoch=True, on_step=False, batch_size=self.batch_size)
         return loss
 
     def validation_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
         val_mae = self.valid_metric(pred*self.mad + self.mean, y)
-        self.log("valid_MAE", val_mae, prog_bar=True, on_epoch=True, on_step=False)
+        self.log("valid_MAE", val_mae, prog_bar=True, on_epoch=True, on_step=False, batch_size=self.batch_size)
 
     def test_step(self, graph, batch_idx):
         pred = self(graph).squeeze()
         y = self.get_target(graph)
         test_mae = self.test_metric(pred*self.mad + self.mean, y)
-        self.log("test_MAE", test_mae, prog_bar=True, on_epoch=True, on_step=False)
+        self.log("test_MAE", test_mae, prog_bar=True, on_epoch=True, on_step=False, batch_size=self.batch_size)
     """
     def on_train_epoch_end(self):
         self.log("train_MAE", self.train_metric, prog_bar=True)
