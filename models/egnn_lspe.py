@@ -97,7 +97,7 @@ class EGNNLSPE(nn.Module):
 
         self.pooler = pool
 
-        #TODO: Original Paper uses only one Linear layer
+
         self.head = nn.Sequential(nn.Linear(hidden_features, hidden_features),
                                   act(),
                                   nn.Linear(hidden_features, out_features))
