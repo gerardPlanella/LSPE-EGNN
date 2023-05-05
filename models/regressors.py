@@ -31,8 +31,7 @@ class QM9Regressor(pl.LightningModule):
         if isinstance(self.model, EGNN):
             # Don't add distance, as this is done internally
             pred = self.model(graph.x, graph.pos, graph.edge_index, graph.batch)
-        
-        if isinstance(self.model, EGNNLSPE):
+        elif isinstance(self.model, EGNNLSPE):
             pred = self.model(graph.x, graph.pos, graph.edge_index, graph.batch, randomwalk(graph)[0])
                     
         return pred

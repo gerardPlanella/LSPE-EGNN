@@ -46,7 +46,7 @@ def randomwalk(graph, N=10):
         randomwalk_matrix.append(randomwalk_i)
 
     #We want to only know the probabilities of the walk ending up back in the original position for depths k (the diagonals of each random walk matrix)
-    output = np.array([np.diag(matrix) for matrix in randomwalk_matrix]).T
+    #output = np.array([np.diag(matrix) for matrix in randomwalk_matrix]).T
 
     # Calculate graph Laplacian: degree matrix - adjacency matrix
     laplacian = np.diag(np.sum(adj_matrix, axis=0)) - adj_matrix
