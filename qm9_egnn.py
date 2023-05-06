@@ -19,8 +19,8 @@ class EGNNLayer(nn.Module):
     def forward(self, x, pos, edge_index):
         send, rec = edge_index
         state = torch.cat((x[send], x[rec], torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
-        message_pre = self.message_mlp(state)
-        message = self.edge_net(message_pre) * message_pre
+        message = self.message_mlp(state)
+        # message = self.edge_net(message_pre) * message_pre
         aggr = scatter_add(message, rec, dim=0)
         update = self.update_mlp(torch.cat((x, aggr), dim=1))
         return update
