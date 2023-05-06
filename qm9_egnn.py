@@ -15,11 +15,12 @@ class EGNNLayer(nn.Module):
         super().__init__()
         self.message_mlp = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
         self.update_mlp = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-
+        self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
     def forward(self, x, pos, edge_index):
         send, rec = edge_index
         state = torch.cat((x[send], x[rec], torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
-        message = self.message_mlp(state)
+        message_pre = self.message_mlp(state)
+        message = self.edge_net(message_pre) * message_pre
         aggr = scatter_add(message, rec, dim=0)
         update = self.update_mlp(torch.cat((x, aggr), dim=1))
         return update
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     wandb.init(project=f"DL2-EGNN")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     transform = RadiusGraph(r=1e6)
-    dataset = QM9('./data_floorcode', pre_transform = transform)
+    dataset = QM9('data/data/QM9', pre_transform = transform)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
@@ -102,7 +103,7 @@ if __name__ == '__main__':
             loss = criterion(pred, (target - mean) / mad)
             mae = criterion(pred * mad + mean, target)
             loss.backward()
-            torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=1.0)
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
             optimizer.step()
             epoch_mae_train += mae.item()
 
