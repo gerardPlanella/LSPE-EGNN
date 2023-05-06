@@ -7,7 +7,7 @@ import wandb
 from torch_scatter import scatter_add
 from torch_geometric.nn import global_add_pool
 from torch_geometric.datasets import QM9
-from torch_geometric.transforms import RadiusGraph
+from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, Compose
 
 
 class EGNNLayer(nn.Module):
@@ -29,13 +29,14 @@ class EGNNLayer(nn.Module):
 class EGNN(nn.Module):
     def __init__(self, num_in, num_hidden, num_out, num_layers):
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(num_in, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
+        self.embed = nn.Sequential(nn.Linear(num_in+15, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
         self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
 
     def forward(self, data):
-        x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
+        x, pos, edge_index, batch, rw = data.x, data.pos, data.edge_index, data.batch, data.random_walk_pe
+        x = torch.cat([x, rw], dim = -1)
         x = self.embed(x)
 
         for layer in self.layers:
@@ -51,8 +52,9 @@ class EGNN(nn.Module):
 if __name__ == '__main__':
     wandb.init(project=f"DL2-EGNN")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    transform = RadiusGraph(r=1e6)
-    dataset = QM9('data/data/QM9', pre_transform = transform)
+    # transform = RadiusGraph(r=1e6)
+    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
+    dataset = QM9('./data', pre_transform = t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
@@ -99,7 +101,6 @@ if __name__ == '__main__':
             batch = batch.to(device)
             pred = model(batch)
             target = torch.squeeze(batch.y[:, 1])  # batch.y[1] for alpha
-
             loss = criterion(pred, (target - mean) / mad)
             mae = criterion(pred * mad + mean, target)
             loss.backward()
