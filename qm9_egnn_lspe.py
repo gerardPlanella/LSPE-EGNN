@@ -14,16 +14,16 @@ class EGNNLayer(nn.Module):
     def __init__(self, num_hidden):
         super().__init__()
         self.message_mlp = nn.Sequential(nn.Linear(4 * num_hidden + 1, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
-        self.message_mlp_pos = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.Tanh(), nn.Linear(num_hidden, num_hidden), nn.Tanh())
+        self.message_mlp_pos = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.Tanh(), nn.Linear(num_hidden, num_hidden), nn.Tanh())
         self.update_mlp = nn.Sequential(nn.Linear(3 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
         self.update_pos_net = nn.Sequential(nn.Linear(2*num_hidden, num_hidden), nn.Tanh(), nn.Linear(num_hidden, num_hidden), nn.Tanh())
 
     def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
-
-        state = torch.cat((torch.cat([x[send], pe[send]], dim = -1), torch.cat([x[rec], pe[rec]], dim = -1), torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
-        state_pe = torch.cat([pe[send], pe[rec]], dim = 1)
+        dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+        state = torch.cat((torch.cat([x[send], pe[send]], dim = -1), torch.cat([x[rec], pe[rec]], dim = -1), dist), dim=1)
+        state_pe = torch.cat([pe[send], pe[rec], dist], dim = 1)
 
         message = self.message_mlp(state)
         message_pos = self.message_mlp_pos(state_pe)
@@ -56,8 +56,10 @@ class EGNN(nn.Module):
 
         for layer in self.layers:
             # x = x + layer(x, pos, edge_index)
-            out, pe = layer(x, pos, edge_index, pe)
+            out, pe_out = layer(x, pos, edge_index, pe)
             x = x + out
+            pe = pe_out + pe
+
             
 
         x = self.pre_readout(x)
@@ -72,7 +74,7 @@ if __name__ == '__main__':
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
     t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
-    dataset = QM9('./data', pre_transform = t_compose)
+    dataset = QM9('./data/PE/data', pre_transform = t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
