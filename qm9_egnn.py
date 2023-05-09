@@ -27,9 +27,9 @@ class EGNNLayer(nn.Module):
 
 
 class EGNN(nn.Module):
-    def __init__(self, num_in, num_hidden, num_out, num_layers):
+    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim):
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(num_in+15, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
+        self.embed = nn.Sequential(nn.Linear(num_in+pe_dim, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
         self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
@@ -53,8 +53,9 @@ if __name__ == '__main__':
     wandb.init(project=f"DL2-EGNN")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
-    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
-    dataset = QM9('./data', pre_transform = t_compose)
+    pe_dim = 24
+    t_compose = Compose([AddRandomWalkPE(walk_length = pe_dim)])
+    dataset = QM9('./data/data_PE24_no_connected', pre_transform = t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
@@ -81,7 +82,8 @@ if __name__ == '__main__':
         num_in=11,
         num_hidden=128,
         num_out=1,
-        num_layers=7
+        num_layers=7,
+        pe_dim=pe_dim
     ).to(device)
 
     criterion = torch.nn.L1Loss(reduction='sum')
