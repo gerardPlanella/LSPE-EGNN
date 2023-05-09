@@ -50,7 +50,7 @@ class EGNN(nn.Module):
 
 
 if __name__ == '__main__':
-    wandb.init(project=f"DL2-EGNN")
+    wandb.init(project=f"DL2-EGNN", name="No-FC_PE-RW24-No-LSPE-1-Embedder")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
     pe_dim = 24
