@@ -16,4 +16,4 @@ cd $HOME/LSPE-EGNN
 source activate egnn_lspe_gpu
 # Run your code
 #srun python train.py --epochs 1000
-srun python qm9_egnn_lspe.py
+srun python qm9_egnn.py

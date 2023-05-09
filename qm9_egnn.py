@@ -50,11 +50,11 @@ class EGNN(nn.Module):
 
 
 if __name__ == '__main__':
-    wandb.init(project=f"DL2-EGNN")
+    wandb.init(project=f"DL2-EGNN", name="No-FC_PE-RW24-No-LSPE-1-Embedder")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
-    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
-    dataset = QM9('./data', pre_transform = t_compose)
+    t_compose = Compose([AddRandomWalkPE(walk_length = 24)])
+    dataset = QM9('./data_no_fc_rw_15', pre_transform = t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
