@@ -47,14 +47,15 @@ def parse_options():
     # General Training parameters
     parser.add_argument('--model', type=str, default='egnn', metavar='N',
                         help='Available models: egnn | egnn_lspe')
-    # todo: add another parameter for pe, which contains the dim, leave dataset as qm9 | qm9_fc
-    # todo: see how this affects the change in the ouput files
-    # todo: create a new get_pe method
-    parser.add_argument('--dataset', type=str, default='qm9_rw24', metavar='N',
-                        help='qm9 | qm9_(fc)_(rw<dim>)_(lap<dim>)')
-    parser.add_argument('--seed', type=int, default=42, metavar='S',
+    parser.add_argument('--dataset', type=str, default='qm9', metavar='N',
+                        help='qm9 | qm9_fc')
+    parser.add_argument('--pe', type=str, default='rw', metavar='S',
+                        help='nope | rw< | lap')
+    parser.add_argument('--pe_dim', type=int, default=24, metavar='N',
+                        help='PE dimension (default: 24)')
+    parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Random seed (default: 42)')
-    parser.add_argument('--epochs', type=int, default=15, metavar='N',
+    parser.add_argument('--epochs', type=int, default=10, metavar='N',
                         help='Number of epochs to train (default: 10)')
     parser.add_argument('--batch_size', type=int, default=96, metavar='N',
                         help='Batch size for training (default: 96)')
@@ -84,26 +85,23 @@ def split_qm9(dataset):
     val_dataset = dataset[n_test:]
     return train_dataset, val_dataset, test_dataset
 
-def get_dataset(dataset_name, **kwargs):
-    """Gets the corresponding QM9 dataset.
-        Examples of dataset names: QM9_fc_rw42, QM9_lap42"""
-    assert not (('rw' in dataset_name.lower()) and ('lap' in dataset_name.lower())), "Cannot have both RW and LAP as PE"
+def get_pe(pe_name, pe_dim):
+    if 'rw' in pe_name.lower():
+        return AddRandomWalkPE(pe_dim)
+    elif 'lap' in pe_name.lower():
+        return AddLaplacianEigenvectorPE(pe_dim)
+    elif 'nope' in pe_name.lower():
+        return None
+    else:
+        raise NotImplementedError(f"PE method \"{pe_name}\" not implemented.")
+
+def get_dataset(dataset_name, pe_name, pe_dim):
+    """Gets the corresponding QM9 dataset."""
     transform = Compose([])
     if 'fc' in dataset_name.lower():
         transform.transforms.append(RadiusGraph(1e6))
-    elif f'rw' in dataset_name.lower():
-        try:
-            pe_dim = int(re.findall(r'\d+', kwargs['dataset'])[-1])
-            transform.transforms.append(AddRandomWalkPE(pe_dim))
-        except TypeError:
-            print('Please specify the Positional Encoding dimension for RW PE')
-    elif f'lap' in dataset_name.lower():
-        try:
-            pe_dim = int(re.findall(r'\d+', kwargs['dataset'])[-1])
-            transform.transforms.append(AddLaplacianEigenvectorPE(pe_dim))
-        except TypeError:
-            print('Please specify the Positional Encoding dimension for Laplacian Eigenvectors PE.')
-
+    elif 'nope' not in pe_name.lower():
+        transform.transforms.append(get_pe(pe_name, pe_dim))
     return QM9(f'./data/{dataset_name}', pre_transform=transform)
 
 def get_model(model_name):
@@ -139,17 +137,13 @@ def main(args):
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
     # Setting the WandB parameters
-    numbers = re.findall(r'\d+', args.dataset)
-    args.pe_dim = int(numbers[-1]) if len(numbers) > 0 else 0
     config = {
         **vars(args),
         'lspe': 'lspe' in args.model,
         'fc': 'fc' in args.model,
-        # todo: change pe_dim to an argument for argparse
-        'pe_dim': int(numbers[-1]) if len(numbers) > 0 else 0
     }
     wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
-               name=f'{args.model}_{args.dataset}')
+               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe is not "nope" else args.pe_dim}')
 
     # Initialize the model
     net = get_model(args.model)
@@ -202,6 +196,7 @@ def main(args):
                             "best_epoch": epoch}
                     model_path = f"saved_models/{args.model}" \
                                  f"_{args.dataset}" \
+                                 f"_{args.pe}{args.pe_dim if args.pe is not 'nope' else args.pe_dim}" \
                                  f"_epochs-{args.epochs}" \
                                  f"_batch-{args.batch_size}" \
                                  f"_num_hidden-{args.num_hidden}" \
