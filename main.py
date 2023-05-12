@@ -126,7 +126,7 @@ def main(args):
     set_seed(args.seed)
 
     # Get the dataset object
-    dataset = get_dataset(args.dataset, **vars(args))
+    dataset = get_dataset(args.dataset, args.pe, args.pe_dim)
 
     # Split the dataset into train, val and test
     train_dataset, val_dataset, test_dataset = split_qm9(dataset)
@@ -143,7 +143,7 @@ def main(args):
         'fc': 'fc' in args.model,
     }
     wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
-               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe is not "nope" else args.pe_dim}')
+               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else args.pe_dim}')
 
     # Initialize the model
     net = get_model(args.model)
@@ -196,7 +196,7 @@ def main(args):
                             "best_epoch": epoch}
                     model_path = f"saved_models/{args.model}" \
                                  f"_{args.dataset}" \
-                                 f"_{args.pe}{args.pe_dim if args.pe is not 'nope' else args.pe_dim}" \
+                                 f"_{args.pe}{args.pe_dim if args.pe != 'nope' else args.pe_dim}" \
                                  f"_epochs-{args.epochs}" \
                                  f"_batch-{args.batch_size}" \
                                  f"_num_hidden-{args.num_hidden}" \
