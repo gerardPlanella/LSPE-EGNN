@@ -4,7 +4,6 @@ from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import copy
 import wandb
-from torch_scatter import scatter_add
 from torch_geometric.nn import global_add_pool
 from torch_geometric.datasets import QM9
 from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, Compose
@@ -16,12 +15,25 @@ class EGNNLayer(nn.Module):
         self.message_mlp = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
         self.update_mlp = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
+
+    # Old forward variant, without MPS support
+    # def forward(self, x, pos, edge_index):
+    #     send, rec = edge_index
+    #     state = torch.cat((x[send], x[rec], torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
+    #     message = self.message_mlp(state)
+    #     # message = self.edge_net(message_pre) * message_pre
+    #     aggr = scatter_add(message, rec, dim=0)
+    #     update = self.update_mlp(torch.cat((x, aggr), dim=1))
+    #     return update
+
     def forward(self, x, pos, edge_index):
+        """New forward method with support for mps"""
         send, rec = edge_index
-        state = torch.cat((x[send], x[rec], torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
+        diff = torch.norm(pos[send] - pos[rec], dim=1)
+        state = torch.cat((x[send], x[rec], diff.unsqueeze(1)), dim=1)
         message = self.message_mlp(state)
-        # message = self.edge_net(message_pre) * message_pre
-        aggr = scatter_add(message, rec, dim=0)
+        aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
+        aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
         update = self.update_mlp(torch.cat((x, aggr), dim=1))
         return update
 
@@ -36,7 +48,7 @@ class EGNN(nn.Module):
 
     def forward(self, data):
         x, pos, edge_index, batch, rw = data.x, data.pos, data.edge_index, data.batch, data.random_walk_pe
-        x = torch.cat([x, rw], dim = -1)
+        x = torch.cat([x, rw], dim=-1)
         x = self.embed(x)
 
         for layer in self.layers:
@@ -45,7 +57,6 @@ class EGNN(nn.Module):
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
         out = self.readout(x)
-
         return torch.squeeze(out)
 
 
