@@ -30,7 +30,6 @@ def setup_gpu():
         print("No GPU or MPS available. Setting device to CPU.")
     return device
 
-
 def set_seed(seed):
     """Function for setting the seed for reproducibility."""
     np.random.seed(seed)
@@ -143,7 +142,7 @@ def main(args):
     config = {
         **vars(args),
         'lspe': 'lspe' in args.model,
-        'fc': 'fc' in args.model,
+        'fc': 'fc' in args.dataset,
     }
     wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
                name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}')
