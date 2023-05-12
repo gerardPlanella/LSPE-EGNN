@@ -47,17 +47,17 @@ def parse_options():
     parser.add_argument('--model', type=str, default='egnn', metavar='N',
                         help='Available models: egnn | egnn_lspe')
     parser.add_argument('--dataset', type=str, default='qm9', metavar='N',
-                        help='qm9 | qm9_fc')
+                        help='Available datasets: qm9 | qm9_fc')
     parser.add_argument('--pe', type=str, default='rw', metavar='S',
-                        help='nope | rw | lap')
+                        help='Available PEs: nope | rw | lap')
     parser.add_argument('--pe_dim', type=int, default=24, metavar='N',
-                        help='PE dimension (default: 24)')
+                        help='PE dimension')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
-                        help='Random seed (default: 42)')
+                        help='Random seed')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
-                        help='Number of epochs to train (default: 10)')
+                        help='Number of epochs to train')
     parser.add_argument('--batch_size', type=int, default=96, metavar='N',
-                        help='Batch size for training (default: 96)')
+                        help='Batch size for training')
     parser.add_argument('--learning_rate', type=float, default=5e-4, metavar='N',
                         help='Learning rate')
     parser.add_argument('--weight_decay', type=float, default=1e-16, metavar='N',
@@ -65,13 +65,13 @@ def parse_options():
 
     # Network specific parameters
     parser.add_argument('--num_in', type=int, default=11, metavar='N',
-                        help='Input dimension of features (default: 11)')
+                        help='Input dimension of features')
     parser.add_argument('--num_hidden', type=int, default=128, metavar='N',
-                        help='Hidden dimensions (default: 128)')
+                        help='Hidden dimensions')
     parser.add_argument('--num_out', type=int, default=1, metavar='N',
-                        help='Output dimensions (default: 1)')
+                        help='Output dimensions')
     parser.add_argument('--num_layers', type=int, default=7, metavar='N',
-                        help='Number of model layers (default: 7)')
+                        help='Number of model layers')
 
     args = parser.parse_args()
     return args
@@ -229,4 +229,3 @@ def main(args):
 if __name__ == '__main__':
     args = parse_options()
     main(args)
-
