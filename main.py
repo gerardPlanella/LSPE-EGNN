@@ -50,7 +50,7 @@ def parse_options():
     parser.add_argument('--dataset', type=str, default='qm9', metavar='N',
                         help='qm9 | qm9_fc')
     parser.add_argument('--pe', type=str, default='rw', metavar='S',
-                        help='nope | rw< | lap')
+                        help='nope | rw | lap')
     parser.add_argument('--pe_dim', type=int, default=24, metavar='N',
                         help='PE dimension (default: 24)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
@@ -74,7 +74,6 @@ def parse_options():
     parser.add_argument('--num_layers', type=int, default=7, metavar='N',
                         help='Number of model layers (default: 7)')
 
-    # todo: embedder linear layers
     args = parser.parse_args()
     return args
 
@@ -89,6 +88,7 @@ def get_pe(pe_name, pe_dim):
     if 'rw' in pe_name.lower():
         return AddRandomWalkPE(pe_dim)
     elif 'lap' in pe_name.lower():
+        # todo: processing doesn't work for lap
         return AddLaplacianEigenvectorPE(pe_dim)
     elif 'nope' in pe_name.lower():
         return None
@@ -96,13 +96,16 @@ def get_pe(pe_name, pe_dim):
         raise NotImplementedError(f"PE method \"{pe_name}\" not implemented.")
 
 def get_dataset(dataset_name, pe_name, pe_dim):
-    """Gets the corresponding QM9 dataset."""
+    """Gets the corresponding QM9 dataset.
+    Dependencies with which data can be loaded:
+        torch-cluster==1.6.0, torch-geometric==2.3.0, torch-scatter==1.3.1, torch-sparse==0.6.13, torch==1.13.1"""
     transform = Compose([])
     if 'fc' in dataset_name.lower():
         transform.transforms.append(RadiusGraph(1e6))
     elif 'nope' not in pe_name.lower():
         transform.transforms.append(get_pe(pe_name, pe_dim))
-    return QM9(f'./data/{dataset_name}', pre_transform=transform)
+    return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
+               pre_transform=transform)
 
 def get_model(model_name):
     if model_name == 'egnn':
@@ -143,7 +146,7 @@ def main(args):
         'fc': 'fc' in args.model,
     }
     wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
-               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else args.pe_dim}')
+               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}')
 
     # Initialize the model
     net = get_model(args.model)
@@ -196,7 +199,7 @@ def main(args):
                             "best_epoch": epoch}
                     model_path = f"saved_models/{args.model}" \
                                  f"_{args.dataset}" \
-                                 f"_{args.pe}{args.pe_dim if args.pe != 'nope' else args.pe_dim}" \
+                                 f"_{args.pe}{args.pe_dim if args.pe != 'nope' else ''}" \
                                  f"_epochs-{args.epochs}" \
                                  f"_batch-{args.batch_size}" \
                                  f"_num_hidden-{args.num_hidden}" \
