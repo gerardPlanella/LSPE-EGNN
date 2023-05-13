@@ -108,10 +108,10 @@ def get_dataset(dataset_name, pe_name, pe_dim):
 
 def get_model(model_name):
     if model_name == 'egnn':
-        from qm9_egnn import EGNN
+        from models.egnn import EGNN
         return EGNN
     elif model_name == 'egnn_lspe':
-        from qm9_egnn_lspe import EGNN
+        from models.egnn_lspe import EGNN
         return EGNN
     else:
         raise NotImplementedError(f'Model name {model_name} not recognized.')
