@@ -87,7 +87,7 @@ def get_pe(pe_name, pe_dim):
     if 'rw' in pe_name.lower():
         return AddRandomWalkPE(pe_dim)
     elif 'lap' in pe_name.lower():
-        # todo: processing doesn't work for lap
+        # todo: processing doesn't work for lap ?
         return AddLaplacianEigenvectorPE(pe_dim)
     elif 'nope' in pe_name.lower():
         return None
@@ -148,13 +148,14 @@ def main(args):
                name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}')
 
     # Initialize the model
-    net = get_model(args.model)
-    model = net(
+    model = get_model(args.model)
+    model = model(
         num_in=args.num_in,
         num_hidden=args.num_hidden,
         num_out=args.num_out,
         num_layers=args.num_layers,
-        pe_dim=args.pe_dim
+        pe=args.pe,
+        pe_dim=args.pe_dim,
     ).to(device)
     wandb.watch(model)
 

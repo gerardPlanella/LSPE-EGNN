@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 
+from utils import get_pe_attribute
 from torch_geometric.nn import global_add_pool
 
 class EGNNLayer(nn.Module):
@@ -22,7 +23,6 @@ class EGNNLayer(nn.Module):
     #     dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
     #     state = torch.cat((torch.cat([x[send], pe[send]], dim=-1), torch.cat([x[rec], pe[rec]], dim=-1), dist), dim=1)
     #     state_pe = torch.cat([pe[send], pe[rec], dist], dim=1)
-    #
     #     message = self.message_mlp(state)
     #     message_pos = self.message_mlp_pos(state_pe)
     #     # message = self.edge_net(message_pre) * message_pre
@@ -57,9 +57,11 @@ class EGNNLayer(nn.Module):
 
 
 class EGNN(nn.Module):
-    def __init__(self, num_in, num_hidden, num_out, num_layers):
+    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim, pe='rw'):
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(num_in, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
+        self.pe = pe
+        self.pe_dim = pe_dim if pe != 'nope' else 0
+        self.embed = nn.Sequential(nn.Linear(num_in + self.pe_dim, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.embed_pe = nn.Sequential(nn.Linear(15, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
         self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(),
@@ -67,13 +69,15 @@ class EGNN(nn.Module):
         self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
 
     def forward(self, data):
-        x, pos, edge_index, batch, rw = data.x, data.pos, data.edge_index, data.batch, data.random_walk_pe
-        # x = torch.cat([x, rw], dim = -1)
+        x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
+        pe = getattr(data, get_pe_attribute(self.pe))
+        if self.pe != 'nope':
+            x = torch.cat([x, pe], dim=-1)
+
         x = self.embed(x)
-        pe = self.embed_pe(rw)
+        pe = self.embed_pe(pe)
 
         for layer in self.layers:
-            # x = x + layer(x, pos, edge_index)
             out, pe_out = layer(x, pos, edge_index, pe)
             x = x + out
             pe = pe_out + pe

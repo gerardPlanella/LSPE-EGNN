@@ -1,14 +1,24 @@
 import torch
 import torch.nn as nn
 
+from utils import get_pe_attribute
 from torch_geometric.nn import global_add_pool
 
 class EGNNLayer(nn.Module):
     def __init__(self, num_hidden):
         super().__init__()
-        self.message_mlp = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
-        self.update_mlp = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
+        self.message_mlp = nn.Sequential(
+            nn.Linear(2 * num_hidden + 1, num_hidden),
+            nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden),
+            nn.SiLU())
+        self.update_mlp = nn.Sequential(
+            nn.Linear(2 * num_hidden, num_hidden),
+            nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden))
+        self.edge_net = nn.Sequential(
+            nn.Linear(num_hidden, 1),
+            nn.Sigmoid())
 
     # Old forward variant, without MPS support
     # def forward(self, x, pos, edge_index):
@@ -33,16 +43,30 @@ class EGNNLayer(nn.Module):
 
 
 class EGNN(nn.Module):
-    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim):
+    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim, pe='rw'):
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(num_in+pe_dim, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
-        self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
+        self.pe = pe
+        self.pe_dim = pe_dim if pe != 'nope' else 0
+        self.embed = nn.Sequential(
+            nn.Linear(num_in + self.pe_dim, num_hidden),
+            nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden))
+        self.layers = nn.ModuleList([
+            EGNNLayer(num_hidden) for _ in range(num_layers)])
+        self.pre_readout = nn.Sequential(
+            nn.Linear(num_hidden, num_hidden),
+            nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden))
+        self.readout = nn.Sequential(
+            nn.Linear(num_hidden, num_hidden),
+            nn.SiLU(),
+            nn.Linear(num_hidden, num_out))
 
     def forward(self, data):
-        x, pos, edge_index, batch, rw = data.x, data.pos, data.edge_index, data.batch, data.random_walk_pe
-        x = torch.cat([x, rw], dim=-1)
+        x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
+        pe = getattr(data, get_pe_attribute(self.pe))
+        if self.pe != 'nope':
+            x = torch.cat([x, pe], dim=-1)
         x = self.embed(x)
 
         for layer in self.layers:
