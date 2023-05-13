@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 
-from utils import get_pe_attribute
+from .utils import get_pe_attribute
 from torch_geometric.nn import global_add_pool
 
 class EGNNLayer(nn.Module):
