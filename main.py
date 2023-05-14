@@ -232,15 +232,17 @@ def main(args):
                             "optimizer_state_dict": optimizer.state_dict(),
                             "best_mae": best_val_mae,
                             "best_epoch": epoch}
-                    model_path = f"saved_models/{args.model}" \
+                    model_path = f"{args.model}" \
                                  f"_{args.dataset}" \
                                  f"_{args.pe}{args.pe_dim if args.pe != 'nope' else ''}" \
                                  f"_epochs-{args.epochs}" \
                                  f"_batch-{args.batch_size}" \
                                  f"_num_hidden-{args.num_hidden}" \
                                  f"_num_layers-{args.num_layers}.pt"
-                    # todo if saved_models doesn't exit
-                    torch.save(ckpt, model_path)
+                    saved_models_dir = os.path.join(script_dir, 'saved_models')
+                    if not os.path.exists(saved_models_dir):
+                        os.makedirs(saved_models_dir)
+                    torch.save(ckpt, os.path.join(saved_models_dir, model_path))
 
                 # Perform LR step
                 scheduler.step()
