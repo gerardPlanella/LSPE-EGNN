@@ -57,16 +57,23 @@ class EGNNLayer(nn.Module):
 
 
 class EGNN(nn.Module):
-    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim, pe='rw'):
+    def __init__(self, in_channels, hidden_channels, num_layers, out_channels, pe='rw', pe_dim=24, **kwargs):
         super().__init__()
+        self.in_channels = in_channels
+        self.hidden_channels = hidden_channels
+        self.num_layers = num_layers
+        self.out_channels = out_channels
         self.pe = pe
         self.pe_dim = pe_dim if pe != 'nope' else 0
-        self.embed = nn.Sequential(nn.Linear(num_in + self.pe_dim, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.embed_pe = nn.Sequential(nn.Linear(15, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
-        self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(),
-                                         nn.Linear(num_hidden, num_hidden))
-        self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
+        self.embed = nn.Sequential(nn.Linear(self.in_channels + self.pe_dim, self.hidden_channels),
+                                   nn.SiLU(), nn.Linear(self.hidden_channels, self.hidden_channels))
+        self.embed_pe = nn.Sequential(nn.Linear(15, self.hidden_channels),
+                                      nn.SiLU(), nn.Linear(self.hidden_channels, self.hidden_channels))
+        self.layers = nn.ModuleList([EGNNLayer(self.hidden_channels) for _ in range(self.num_layers)])
+        self.pre_readout = nn.Sequential(nn.Linear(self.hidden_channels, self.hidden_channels),
+                                         nn.SiLU(), nn.Linear(self.hidden_channels, self.hidden_channels))
+        self.readout = nn.Sequential(nn.Linear(self.hidden_channels, self.hidden_channels),
+                                     nn.SiLU(), nn.Linear(self.hidden_channels, self.out_channels))
 
     def forward(self, data):
         x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch

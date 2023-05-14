@@ -1,9 +1,11 @@
 import os
+
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 
 import torch
+import copy
 import time
-import re
+import json
 import numpy as np
 import argparse
 
@@ -17,6 +19,7 @@ from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, AddLaplacia
 # Plotting via wandb
 import wandb
 
+script_dir = os.path.dirname(__file__)
 
 def setup_gpu():
     if torch.cuda.is_available():
@@ -30,6 +33,7 @@ def setup_gpu():
         print("No GPU or MPS available. Setting device to CPU.")
     return device
 
+
 def set_seed(seed):
     """Function for setting the seed for reproducibility."""
     np.random.seed(seed)
@@ -40,13 +44,22 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+
 def parse_options():
     parser = argparse.ArgumentParser("Model runner.")
 
+    # Config matters
+    parser.add_argument('--config', type=str, default=None, metavar='S',
+                        help='Config file for parsing arguments. ' 
+                             'Command line arguments will be overriden.')
+    parser.add_argument('--write_config_to', type=str, default=None, metavar='S',
+                        help='Writes the current arguments as a json file for '
+                             'config with the specified filename.')
+
     # General Training parameters
-    parser.add_argument('--model', type=str, default='egnn', metavar='N',
+    parser.add_argument('--model', type=str, default='egnn', metavar='S',
                         help='Available models: egnn | egnn_lspe')
-    parser.add_argument('--dataset', type=str, default='qm9', metavar='N',
+    parser.add_argument('--dataset', type=str, default='qm9', metavar='S',
                         help='Available datasets: qm9 | qm9_fc')
     parser.add_argument('--pe', type=str, default='rw', metavar='S',
                         help='Available PEs: nope | rw | lap')
@@ -64,17 +77,43 @@ def parse_options():
                         help='clamp the output of the coords function if get too large')
 
     # Network specific parameters
-    parser.add_argument('--num_in', type=int, default=11, metavar='N',
+    parser.add_argument('--in_channels', type=int, default=11, metavar='N',
                         help='Input dimension of features')
-    parser.add_argument('--num_hidden', type=int, default=128, metavar='N',
+    parser.add_argument('--hidden_channels', type=int, default=128, metavar='N',
                         help='Hidden dimensions')
-    parser.add_argument('--num_out', type=int, default=1, metavar='N',
-                        help='Output dimensions')
     parser.add_argument('--num_layers', type=int, default=7, metavar='N',
                         help='Number of model layers')
+    parser.add_argument('--out_channels', type=int, default=1, metavar='N',
+                        help='Output dimensions')
 
     args = parser.parse_args()
+
+    if args.config is not None:
+        config_dir_path = os.path.join(script_dir, 'config')
+        with open(os.path.join(config_dir_path, args.config), 'r') as cf:
+            parser.set_defaults(**json.load(cf))
+            print(f'Successfully parsed the arguments from config/{args.config}')
+        args = parser.parse_args()
+
+    if args.write_config_to is not None:
+        # If no config directory, make it
+        config_dir_path = os.path.join(script_dir, 'config')
+        if not os.path.exists(config_dir_path):
+            os.makedirs(config_dir_path)
+
+        # If no file, make it
+        args.write_config_to += '.json' if args.write_config_to[-5:] != '.json' else ""
+        with open(os.path.join(config_dir_path, args.write_config_to), 'w') as cf:
+            json_args = copy.deepcopy(vars(args))
+            del json_args['config']
+            del json_args['write_config_to']
+            json.dump(json_args, cf, indent=4)
+            print(f'Successfully wrote the config to config/{args.write_config_to}')
+
+    del args.config
+    del args.write_config_to
     return args
+
 
 def split_qm9(dataset):
     n_train, n_test = 100000, 110000
@@ -82,6 +121,7 @@ def split_qm9(dataset):
     test_dataset = dataset[n_train:n_test]
     val_dataset = dataset[n_test:]
     return train_dataset, val_dataset, test_dataset
+
 
 def get_pe(pe_name, pe_dim):
     if 'rw' in pe_name.lower():
@@ -94,6 +134,7 @@ def get_pe(pe_name, pe_dim):
     else:
         raise NotImplementedError(f"PE method \"{pe_name}\" not implemented.")
 
+
 def get_dataset(dataset_name, pe_name, pe_dim):
     """Gets the corresponding QM9 dataset.
     Dependencies with which data can be loaded:
@@ -105,6 +146,7 @@ def get_dataset(dataset_name, pe_name, pe_dim):
         transform.transforms.append(get_pe(pe_name, pe_dim))
     return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
                pre_transform=transform)
+
 
 def get_model(model_name):
     if model_name == 'egnn':
@@ -120,6 +162,8 @@ def get_model(model_name):
 def main(args):
     # Display run arguments
     pprint(args)
+
+
 
     # Set the hardware accelerator
     device = setup_gpu()
@@ -149,14 +193,7 @@ def main(args):
 
     # Initialize the model
     model = get_model(args.model)
-    model = model(
-        num_in=args.num_in,
-        num_hidden=args.num_hidden,
-        num_out=args.num_out,
-        num_layers=args.num_layers,
-        pe=args.pe,
-        pe_dim=args.pe_dim,
-    ).to(device)
+    model = model(**vars(args)).to(device)
     wandb.watch(model)
 
     # Declare the training criterion, optimizer and scheduler
@@ -204,13 +241,14 @@ def main(args):
                                  f"_batch-{args.batch_size}" \
                                  f"_num_hidden-{args.num_hidden}" \
                                  f"_num_layers-{args.num_layers}.pt"
+                    # todo if saved_models doesn't exit
                     torch.save(ckpt, model_path)
 
                 # Perform LR step
                 scheduler.step()
 
                 # Update the postfix of tqdm with every iteration
-                t.set_postfix(time=time.time()-start, lr=optimizer.param_groups[0]['lr'],
+                t.set_postfix(time=time.time() - start, lr=optimizer.param_groups[0]['lr'],
                               train_loss=epoch_train_mae, val_loss=epoch_val_mae)
 
     except KeyboardInterrupt:
