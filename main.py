@@ -163,8 +163,6 @@ def main(args):
     # Display run arguments
     pprint(args)
 
-
-
     # Set the hardware accelerator
     device = setup_gpu()
 
