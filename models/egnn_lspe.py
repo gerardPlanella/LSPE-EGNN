@@ -78,8 +78,8 @@ class EGNN(nn.Module):
     def forward(self, data):
         x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
         pe = getattr(data, get_pe_attribute(self.pe))
-        if self.pe != 'nope':
-            x = torch.cat([x, pe], dim=-1)
+        assert pe != self.pe != 'nope', 'LSPE has to have PE initialization'
+        x = torch.cat([x, pe], dim=-1)
 
         x = self.embed(x)
         pe = self.embed_pe(pe)
