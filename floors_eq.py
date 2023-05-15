@@ -4,6 +4,7 @@ from torch_geometric.loader import DataLoader
 from tqdm import tqdm
 import copy
 import wandb
+from torch_scatter import scatter_add
 from torch_geometric.nn import global_add_pool
 from torch_geometric.datasets import QM9
 from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, Compose
@@ -12,60 +13,92 @@ from torch_geometric.transforms import RadiusGraph, AddRandomWalkPE, Compose
 class EGNNLayer(nn.Module):
     def __init__(self, num_hidden):
         super().__init__()
-        self.message_mlp = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
-        self.update_mlp = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
-        self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
+        self.message_mlp = nn.Sequential(nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden), nn.SiLU())
+        self.message_mlp_pos = nn.Sequential(nn.Linear(2 * num_hidden + 1, num_hidden), nn.Tanh(), nn.Linear(num_hidden, num_hidden), nn.Tanh())
+        # self.update_mlp = nn.Sequential(nn.Linear(3 * num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
+        # self.edge_net = nn.Sequential(nn.Linear(num_hidden, 1), nn.Sigmoid())
+        # self.update_pos_net = nn.Sequential(nn.Linear(2*num_hidden, num_hidden), nn.Tanh(), nn.Linear(num_hidden, num_hidden), nn.Tanh())
 
-    # Old forward variant, without MPS support
-    # def forward(self, x, pos, edge_index):
-    #     send, rec = edge_index
-    #     state = torch.cat((x[send], x[rec], torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)), dim=1)
-    #     message = self.message_mlp(state)
-    #     # message = self.edge_net(message_pre) * message_pre
-    #     aggr = scatter_add(message, rec, dim=0)
-    #     update = self.update_mlp(torch.cat((x, aggr), dim=1))
-    #     return update
-
-    def forward(self, x, pos, edge_index):
-        """New forward method with support for mps"""
+    def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
-        diff = torch.norm(pos[send] - pos[rec], dim=1)
-        state = torch.cat((x[send], x[rec], diff.unsqueeze(1)), dim=1)
+        dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+        # state = torch.cat([x[send], x[rec], dist], dim = 1)
+        state = torch.cat([x[send], x[rec]], dim = 1)
+
+        # state = torch.cat([x[send], pe[send]], dim = -1)
+        state_pe = torch.cat([pe[send], pe[rec], dist], dim = 1)
+
         message = self.message_mlp(state)
-        aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
-        update = self.update_mlp(torch.cat((x, aggr), dim=1))
-        return update
+        message_pos = self.message_mlp_pos(state_pe)
+
+        # message = self.edge_net(message_pre) * message_pre
+        aggr = scatter_add(message, rec, dim=0)
+        aggr_pos = scatter_add(message_pos, rec, dim = 0)
+
+        # update = self.update_mlp(torch.cat((x, pe, aggr), dim = 1))
+        # update_pe = self.update_pos_net(torch.cat([pe, aggr_pos], dim = 1))
+        update = x + aggr
+        update_pe = pe + aggr_pos
+        
+        return update, update_pe
+
+        # send, rec = edge_index
+        # dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+        # state = torch.cat((torch.cat([x[send], pe[send]], dim = -1), dist), dim=1)
+        # state_pe = torch.cat([pe[send], pe[rec], dist], dim = 1)
+
+        # message = self.message_mlp(state)
+        # message_pos = self.message_mlp_pos(state_pe)
+
+        # # message = self.edge_net(message_pre) * message_pre
+        # # aggr = scatter_add(message, rec, dim=0)
+        # aggr = scatter_add(message, rec, dim=0)
+        # aggr_pos = scatter_add(message_pos, rec, dim = 0)
+
+        # update = self.update_mlp(torch.cat((x, pe, aggr), dim = 1))
+        # update_pe = self.update_pos_net(torch.cat([pe, aggr_pos], dim = 1))
+        
+        return update, update_pe
+
 
 
 class EGNN(nn.Module):
-    def __init__(self, num_in, num_hidden, num_out, num_layers, pe_dim):
+    def __init__(self, num_in, num_hidden, num_out, num_layers):
         super().__init__()
-        self.embed = nn.Sequential(nn.Linear(num_in+pe_dim, num_hidden))
+        self.embed = nn.Linear(num_in, num_hidden)
+        self.embed_pe = nn.Linear(24, num_hidden)
         self.layers = nn.ModuleList([EGNNLayer(num_hidden) for _ in range(num_layers)])
         self.pre_readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_hidden))
         self.readout = nn.Sequential(nn.Linear(num_hidden, num_hidden), nn.SiLU(), nn.Linear(num_hidden, num_out))
 
     def forward(self, data):
         x, pos, edge_index, batch, rw = data.x, data.pos, data.edge_index, data.batch, data.random_walk_pe
-        x = torch.cat([x, rw], dim=-1)
+        # x = torch.cat([x, rw], dim = -1)
         x = self.embed(x)
+        pe = self.embed_pe(rw)
+        
 
         for layer in self.layers:
-            x = x + layer(x, pos, edge_index)
+            # x = x + layer(x, pos, edge_index)
+            out, pe_out = layer(x, pos, edge_index, pe)
+            x = x + out
+            pe = pe_out + pe
+
+            
 
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
         out = self.readout(x)
+
         return torch.squeeze(out)
 
+#No-FC_PE-RW-24_Yes-LSPE-1-Embedder_7-Layers-ReducedParams-NoDist"
 if __name__ == '__main__':
-    wandb.init(project=f"DL2-EGNN", name="Yes-FC_Yes_PE-No_LSPE-1-layers")
+    wandb.init(project=f"DL2-EGNN", name="floor equation-sum-yes_pe-yes_lspe-no_dist-no_fc-newest")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
-    pe_dim = 24
-    t_compose = Compose([AddRandomWalkPE(walk_length = pe_dim)])
-    dataset = QM9('data/data_PE24', pre_transform = t_compose)
+    t_compose = Compose([AddRandomWalkPE(walk_length = 24)])
+    dataset = QM9('./data_PE24_no_connected', pre_transform = t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
@@ -92,8 +125,7 @@ if __name__ == '__main__':
         num_in=11,
         num_hidden=128,
         num_out=1,
-        num_layers=1,
-        pe_dim=pe_dim
+        num_layers=7
     ).to(device)
 
     criterion = torch.nn.L1Loss(reduction='sum')
