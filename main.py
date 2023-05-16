@@ -65,6 +65,8 @@ def parse_options():
                         help='Available PEs: nope | rw | lap')
     parser.add_argument('--pe_dim', type=int, default=24, metavar='N',
                         help='PE dimension')
+    parser.add_argument('--lspe', action='store_true',
+                        help='Whether or not to use LSPE framework. (default: False)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Random seed')
     parser.add_argument('--epochs', type=int, default=10, metavar='N',
@@ -152,9 +154,6 @@ def get_model(model_name):
     if model_name == 'egnn':
         from models.egnn import EGNN
         return EGNN
-    elif model_name == 'egnn_lspe':
-        from models.egnn_lspe import EGNN
-        return EGNN
     else:
         raise NotImplementedError(f'Model name {model_name} not recognized.')
 
@@ -165,6 +164,7 @@ def main(args):
 
     # Set the hardware accelerator
     device = setup_gpu()
+    return
 
     # Set seed for reproducibility
     set_seed(args.seed)
@@ -183,7 +183,6 @@ def main(args):
     # Setting the WandB parameters
     config = {
         **vars(args),
-        'lspe': 'lspe' in args.model,
         'fc': 'fc' in args.dataset,
     }
     wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
