@@ -98,7 +98,7 @@ class EGNN(nn.Module):
         # If the LSPE framework is used, add another embedder
         if self.lspe:
             self.embed_pe = nn.Sequential(
-                nn.Linear(self.pe_dim, self.hidden_channels), nn.SiLU(),  # todo prev, in channels was 15?
+                nn.Linear(15, self.hidden_channels), nn.SiLU(),  # what is this 15?
                 nn.Linear(self.hidden_channels, self.hidden_channels))
 
         # Initialization of hidden EGNN with (optional) LSPE hidden layers

@@ -4,6 +4,7 @@ import torch.nn as nn
 from .utils import get_pe_attribute
 from torch_geometric.nn import global_add_pool
 
+# Not used anymore. Check egnn.py
 class EGNNLayer(nn.Module):
     def __init__(self, num_hidden):
         super().__init__()
@@ -44,7 +45,7 @@ class EGNNLayer(nn.Module):
 
         return update, update_pe
 
-
+# Not used anymore. Check egnn.py
 class EGNN(nn.Module):
     def __init__(self, in_channels, hidden_channels, num_layers, out_channels, pe='rw', pe_dim=24, **kwargs):
         super().__init__()
