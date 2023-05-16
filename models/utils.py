@@ -24,3 +24,6 @@ def deprecated(func):
         return func(*args, **kwargs)
 
     return new_func
+
+def scatter_add():
+    """Adaptation of scatter_add from torch_scatter"""

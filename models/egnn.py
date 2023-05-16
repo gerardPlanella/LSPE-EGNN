@@ -8,17 +8,16 @@ from torch_geometric.nn import global_add_pool
 class EGNNLayer(nn.Module):
     """Standard version of the EGNN layer"""
 
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels, **kwargs):
         super().__init__()
-        self.hidden_channels = hidden_channels
         self.message_mlp = nn.Sequential(
-            nn.Linear(2 * self.hidden_channels + 1, self.hidden_channels),
-            nn.SiLU(), nn.Linear(self.hidden_channels, self.hidden_channels), nn.SiLU())
+            nn.Linear(2 * hidden_channels + 1, hidden_channels),
+            nn.SiLU(), nn.Linear(hidden_channels, hidden_channels), nn.SiLU())
         self.update_mlp = nn.Sequential(
-            nn.Linear(2 * self.hidden_channels, self.hidden_channels), nn.SiLU(),
-            nn.Linear(self.hidden_channels, self.hidden_channels))
+            nn.Linear(2 * hidden_channels, hidden_channels), nn.SiLU(),
+            nn.Linear(hidden_channels, hidden_channels))
         self.edge_net = nn.Sequential(
-            nn.Linear(self.hidden_channels, 1), nn.Sigmoid())
+            nn.Linear(hidden_channels, 1), nn.Sigmoid())
 
     def forward(self, x, pos, edge_index):
         send, rec = edge_index
@@ -34,31 +33,35 @@ class EGNNLayer(nn.Module):
 class EGNNLSPELayer(nn.Module):
     """EGNN layer augmented with LSPE"""
 
-    def __init__(self, hidden_channels):
+    def __init__(self, hidden_channels, **kwargs):
         super().__init__()
-        self.hidden_channels = hidden_channels
+        self.include_dist = kwargs['include_dist']
         self.message_mlp = nn.Sequential(
-            nn.Linear(4 * self.hidden_channels + 1, self.hidden_channels), nn.SiLU(),
-            nn.Linear(self.hidden_channels, self.hidden_channels), nn.SiLU())
+            nn.Linear(4 * hidden_channels + 1, hidden_channels), nn.SiLU(),
+            nn.Linear(hidden_channels, hidden_channels), nn.SiLU())
         self.message_pos_mlp = nn.Sequential(
-            nn.Linear(2 * self.hidden_channels + 1, self.hidden_channels), nn.Tanh(),
-            nn.Linear(self.hidden_channels, self.hidden_channels), nn.Tanh())
+            nn.Linear(2 * hidden_channels + 1, hidden_channels), nn.Tanh(),
+            nn.Linear(hidden_channels, hidden_channels), nn.Tanh())
         self.update_mlp = nn.Sequential(
-            nn.Linear(3 * self.hidden_channels, self.hidden_channels), nn.SiLU(),
-            nn.Linear(self.hidden_channels, self.hidden_channels))
+            nn.Linear(3 * hidden_channels, hidden_channels), nn.SiLU(),
+            nn.Linear(hidden_channels, hidden_channels))
         self.update_pos_mlp = nn.Sequential(
-            nn.Linear(2 * self.hidden_channels, self.hidden_channels), nn.Tanh(),
-            nn.Linear(self.hidden_channels, self.hidden_channels), nn.Tanh())
+            nn.Linear(2 * hidden_channels, hidden_channels), nn.Tanh(),
+            nn.Linear(hidden_channels, hidden_channels), nn.Tanh())
         self.edge_net = nn.Sequential(
-            nn.Linear(self.hidden_channels, 1), nn.Sigmoid())
+            nn.Linear(hidden_channels, 1), nn.Sigmoid())
 
     def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
-        dist = torch.norm(pos[send] - pos[rec], dim=1)
+
         state = torch.cat((torch.cat([x[send], pe[send]], dim=-1),
-                           torch.cat([x[rec], pe[rec]], dim=-1),
-                           dist.unsqueeze(1)), dim=1)
-        state_pe = torch.cat([pe[send], pe[rec], dist], dim=1)
+                           torch.cat([x[rec], pe[rec]], dim=-1)), dim=1)
+        state_pe = torch.cat([pe[send], pe[rec]], dim=1)
+
+        if self.include_dist:
+            dist = torch.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+            state = torch.cat((state, dist), dim=1)
+            state_pe = torch.cat((state, dist), dim=1)
 
         message = self.message_mlp(state)
         message_pos = self.message_pos_mlp(state_pe)
@@ -87,9 +90,11 @@ class EGNN(nn.Module):
         self.pe_dim = pe_dim if pe != 'nope' else 0
         self.lspe = lspe
 
-        # Pre-condition in case we are using LSPE
-        assert self.pe != 'nope' and self.lspe, "LSPE has to have initialized PE."
+        self.include_dist = kwargs['include_dist']
 
+        # Pre-condition in case we are using LSPE
+        assert not (self.pe == 'nope' and self.lspe), "LSPE has to have initialized PE."
+        
         # Initialization of embedder for the input features (node features + (optional) PE dim)
         self.embed = nn.Sequential(
             nn.Linear(self.in_channels + self.pe_dim, self.hidden_channels), nn.SiLU(),
@@ -98,13 +103,13 @@ class EGNN(nn.Module):
         # If the LSPE framework is used, add another embedder
         if self.lspe:
             self.embed_pe = nn.Sequential(
-                nn.Linear(15, self.hidden_channels), nn.SiLU(),  # what is this 15?
+                nn.Linear(self.pe_dim, self.hidden_channels), nn.SiLU(),  # what is this 15?
                 nn.Linear(self.hidden_channels, self.hidden_channels))
 
         # Initialization of hidden EGNN with (optional) LSPE hidden layers
         layer = EGNNLSPELayer if self.lspe else EGNNLayer
         self.layers = nn.ModuleList([
-            layer(self.hidden_channels) for _ in range(self.num_layers)])
+            layer(self.hidden_channels, **kwargs) for _ in range(self.num_layers)])
 
         # Readout networks
         self.pre_readout = nn.Sequential(
@@ -117,7 +122,6 @@ class EGNN(nn.Module):
     def forward(self, data):
         x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
 
-        # In case we have LSPE or solely PE init, initialize PE
         if self.pe != 'nope':
             pe = getattr(data, get_pe_attribute(self.pe))
             x = torch.cat([x, pe], dim=-1)
@@ -138,4 +142,5 @@ class EGNN(nn.Module):
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
         out = self.readout(x)
+
         return torch.squeeze(out)

@@ -88,6 +88,15 @@ def parse_options():
     parser.add_argument('--out_channels', type=int, default=1, metavar='N',
                         help='Output dimensions')
 
+    # Funky experimentation with a lot of abstraction headache
+    parser.add_argument('--include_dist', action='store_true',
+                        help='Whether or not to include distance '
+                             'in the message state. (default: False)')
+    parser.add_argument('--both_states', action='store_true',
+                        help='Whether or not to include both '
+                             'node hidden states (h_i or h_j)'
+                             'in the message state. (default: False)')
+
     args = parser.parse_args()
 
     if args.config is not None:
@@ -164,7 +173,6 @@ def main(args):
 
     # Set the hardware accelerator
     device = setup_gpu()
-    return
 
     # Set seed for reproducibility
     set_seed(args.seed)
