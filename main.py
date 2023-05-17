@@ -23,7 +23,7 @@ script_dir = os.path.dirname(__file__)
 
 def setup_gpu():
     if torch.cuda.is_available():
-        device = torch.device('cuda:0')
+        device = torch.device('cuda')
         print("CUDA available. Setting device to CUDA:", device)
     elif torch.backends.mps.is_available():
         device = torch.device("mps")
