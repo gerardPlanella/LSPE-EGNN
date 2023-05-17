@@ -5,23 +5,45 @@ from .utils import get_pe_attribute
 
 class MPNNLayer(nn.Module):
     """Vanilla MPNN layer"""
+
     def __init__(self, num_hidden, **kwargs):
         super().__init__()
-        self.both_states = kwargs['both_states']
         self.num_hidden = num_hidden
+        self.reduced = kwargs['reduced']
+        self.include_dist = kwargs['include_dist']
+        params_dist = 1 if self.include_dist else 0
+        params_reduced_factor = 2 if self.reduced else 1
+
+        # Message network: phi_m
         self.message_mlp = nn.Sequential(
-            nn.Linear(num_hidden, num_hidden), nn.SiLU(),
+            nn.Linear(2//params_reduced_factor * num_hidden + params_dist, num_hidden), nn.SiLU(),
             nn.Linear(num_hidden, num_hidden), nn.SiLU())
 
-    def forward(self, x, _, edge_index):
+        # Update network: phi_h
+        self.update_mlp = nn.Sequential(
+            nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden))
+
+    def forward(self, x, pos, edge_index):
         send, rec = edge_index
         state = x[send]
-        if self.both_states:
+
+        if not self.reduced:
             state = torch.cat([state, x[rec]], dim=1)
+
+        if self.include_dist:
+            dist = torch.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+            state = torch.cat([state, dist], dim=1)
+
+        # Pass the state through the message net
         message = self.message_mlp(state)
+
+        # Aggregate messages from neighbours by summing
         aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
         aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
-        update = x + aggr
+
+        # Pass the new state through the update network alongside x
+        update = self.update_mlp(torch.cat([x, aggr], dim=1))
         return update
 
 
@@ -31,38 +53,61 @@ class MPNNLSPELayer(nn.Module):
     def __init__(self, num_hidden, **kwargs):
         super().__init__()
         self.include_dist = kwargs['include_dist']
+        self.reduced = kwargs['reduced']
         params_dist = 1 if self.include_dist else 0
+        params_reduced_factor = 2 if self.reduced else 1
+
+        # Message network: phi_m
         self.message_mlp = nn.Sequential(
-            nn.Linear(4 * num_hidden + params_dist, num_hidden), nn.SiLU(),
+            nn.Linear(4//params_reduced_factor * num_hidden + params_dist, num_hidden), nn.SiLU(),
             nn.Linear(num_hidden, num_hidden), nn.SiLU())
-        self.message_mlp_pos = nn.Sequential(
-            nn.Linear(2 * num_hidden + 1, num_hidden), nn.Tanh(),
+
+        # PE LSPE network
+        self.pos_mlp = nn.Sequential(
+            nn.Linear(2//params_reduced_factor * num_hidden + params_dist, num_hidden), nn.Tanh(),
+            nn.Linear(num_hidden, num_hidden), nn.Tanh())
+
+        # Update network: phi_h
+        self.update_mlp = nn.Sequential(
+            nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(),
+            nn.Linear(num_hidden, num_hidden))
+
+        # PE update network: phi_p
+        self.update_mlp_pos = nn.Sequential(
+            nn.Linear(2 * num_hidden, num_hidden), nn.Tanh(),
             nn.Linear(num_hidden, num_hidden), nn.Tanh())
 
     def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
+        state = torch.cat([x[send], pe[send]], dim=-1)
+        pe_state = pe[send]
 
-        state = torch.cat((torch.cat([x[send], pe[send]], dim=-1),
-                           torch.cat([x[rec], pe[rec]], dim=-1)), dim=1)
-        state_pe = torch.cat([pe[send], pe[rec]], dim=1)
+        if not self.reduced:
+            state = torch.cat([state, torch.cat([x[rec], pe[rec]], dim=-1)], dim=1)
+            pe_state = torch.cat([pe_state, pe[rec]], dim=1)
 
         if self.include_dist:
             dist = torch.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
-            state = torch.cat((state, dist), dim=1)
-            state_pe = torch.cat((state, dist), dim=1)
+            state = torch.cat([state, dist], dim=1)
+            pe_state = torch.cat([pe_state, dist], dim=1)
 
+        # Pass the state through the message net
         message = self.message_mlp(state)
-        message_pos = self.message_mlp_pos(state_pe)
+        pos = self.pos_mlp(pe_state)
 
+        # Aggregate state messages from neighbours by summing
         aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        aggr_pos = torch.zeros((x.size(0), message_pos.size(1)), device=x.device)
-
         aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
-        aggr_pos = aggr_pos.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message_pos)
 
-        update = x + aggr
-        update_pe = pe + aggr_pos
+        # Pass the new state through the update network alongside x
+        update = self.update_mlp(torch.cat([x, aggr], dim=1))
 
+        # Aggregate pos from neighbourhood by summing
+        pos_aggr = torch.zeros((x.size(0), pos.size(1)), device=x.device)
+        pos_aggr = pos_aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), pos.size(1)), pos)
+
+        # Pass the new pos state through the update network alongside pe
+        update_pe = self.update_mlp_pos(torch.cat([pe, pos_aggr], dim=1))
         return update, update_pe
 
 
@@ -80,7 +125,6 @@ class MPNN(nn.Module):
         self.lspe = lspe
 
         self.include_dist = kwargs['include_dist']
-        self.both_states = kwargs['both_states']
 
         # Pre-condition in case we are using LSPE
         assert not (self.pe == 'nope' and self.lspe), "LSPE has to have initialized PE."

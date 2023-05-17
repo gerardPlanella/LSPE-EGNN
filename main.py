@@ -57,11 +57,11 @@ def parse_options():
                              'config with the specified filename.')
 
     # General Training parameters
-    parser.add_argument('--model', type=str, default='egnn', metavar='S',
-                        help='Available models: egnn | egnn_lspe')
+    parser.add_argument('--model', type=str, default='mpnn', metavar='S',
+                        help='Available models: egnn | mpnn ')
     parser.add_argument('--dataset', type=str, default='qm9', metavar='S',
                         help='Available datasets: qm9 | qm9_fc')
-    parser.add_argument('--pe', type=str, default='rw', metavar='S',
+    parser.add_argument('--pe', type=str, default='nope', metavar='S',
                         help='Available PEs: nope | rw | lap')
     parser.add_argument('--pe_dim', type=int, default=24, metavar='N',
                         help='PE dimension')
@@ -69,7 +69,7 @@ def parse_options():
                         help='Whether or not to use LSPE framework. (default: False)')
     parser.add_argument('--seed', type=int, default=42, metavar='N',
                         help='Random seed')
-    parser.add_argument('--epochs', type=int, default=10, metavar='N',
+    parser.add_argument('--epochs', type=int, default=1000, metavar='N',
                         help='Number of epochs to train')
     parser.add_argument('--batch_size', type=int, default=96, metavar='N',
                         help='Batch size for training')
@@ -92,10 +92,8 @@ def parse_options():
     parser.add_argument('--include_dist', action='store_true',
                         help='Whether or not to include distance '
                              'in the message state. (default: False)')
-    parser.add_argument('--both_states', action='store_true',
-                        help='Whether or not to include both '
-                             'node hidden states (h_i or h_j)'
-                             'in the message state. (default: False)')
+    parser.add_argument('--reduced', action='store_true',
+                        help='Whether or not to used the reduced version. (default: False)')
 
     args = parser.parse_args()
 
@@ -163,6 +161,9 @@ def get_model(model_name):
     if model_name == 'egnn':
         from models.egnn import EGNN
         return EGNN
+    elif model_name == 'mpnn':
+        from models.mpnn import MPNN
+        return MPNN
     else:
         raise NotImplementedError(f'Model name {model_name} not recognized.')
 
@@ -188,27 +189,29 @@ def main(args):
     val_loader = DataLoader(val_dataset, batch_size=args.batch_size, shuffle=False)
     test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
+    # Initialize the model
+    model = get_model(args.model)
+    model = model(**vars(args)).to(device)
+
+    # Number of parameters of the model
+    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f'Number of parameters: {num_params}')
+
     # Setting the WandB parameters
     config = {
         **vars(args),
         'fc': 'fc' in args.dataset,
+        'num_params': num_params
     }
-    wandb.init(project="dl2-project", entity="msc-ai", config=config, reinit=True,
+    wandb.init(project="dl2-modularized", entity="dl2-gnn-lspe", config=config, reinit=True,
                name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}')
-
-    # Initialize the model
-    model = get_model(args.model)
-    model = model(**vars(args)).to(device)
     wandb.watch(model)
+
 
     # Declare the training criterion, optimizer and scheduler
     criterion = torch.nn.L1Loss(reduction='sum')
     optimizer = torch.optim.Adam(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, args.epochs)
-
-    # Number of parameters of the model
-    num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f'Number of parameters: {num_params}')
 
     # Saving the best model instance based on validation MAE
     best_train_mae, best_val_mae, model_path = float('inf'), float('inf'), ""
