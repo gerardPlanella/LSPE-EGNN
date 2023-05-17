@@ -153,8 +153,10 @@ def get_dataset(dataset_name, pe_name, pe_dim):
         transform.transforms.append(RadiusGraph(1e6))
     elif 'nope' not in pe_name.lower():
         transform.transforms.append(get_pe(pe_name, pe_dim))
-    return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
-               pre_transform=transform)
+    
+    return QM9('./data/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
+    # return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
+    #            pre_transform=transform)
 
 
 def get_model(model_name):
