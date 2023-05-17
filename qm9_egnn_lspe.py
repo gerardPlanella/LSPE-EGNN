@@ -22,18 +22,18 @@ class EGNNLayer(nn.Module):
     def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
         dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
-        state = torch.cat((torch.cat([x[send], pe[send]], dim = -1), torch.cat([x[rec], pe[rec]], dim = -1), dist), dim=1)
-        state_pe = torch.cat([pe[send], pe[rec], dist], dim = 1)
+        state = torch.cat((torch.cat([x[send], pe[send]], dim=-1), torch.cat([x[rec], pe[rec]], dim=-1), dist), dim=1)
+        state_pe = torch.cat([pe[send], pe[rec], dist], dim=1)
 
         message = self.message_mlp(state)
         message_pos = self.message_mlp_pos(state_pe)
 
         # message = self.edge_net(message_pre) * message_pre
         aggr = scatter_add(message, rec, dim=0)
-        aggr_pos = scatter_add(message_pos, rec, dim = 0)
+        aggr_pos = scatter_add(message_pos, rec, dim=0)
 
-        update = self.update_mlp(torch.cat((x, pe, aggr), dim = 1))
-        update_pe = self.update_pos_net(torch.cat([pe, aggr_pos], dim = 1))
+        update = self.update_mlp(torch.cat((x, pe, aggr), dim=1))
+        update_pe = self.update_pos_net(torch.cat([pe, aggr_pos], dim=1))
         
         return update, update_pe
 
@@ -52,15 +52,12 @@ class EGNN(nn.Module):
         # x = torch.cat([x, rw], dim = -1)
         x = self.embed(x)
         pe = self.embed_pe(rw)
-        
 
         for layer in self.layers:
             # x = x + layer(x, pos, edge_index)
             out, pe_out = layer(x, pos, edge_index, pe)
             x = x + out
             pe = pe_out + pe
-
-            
 
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
@@ -73,8 +70,8 @@ if __name__ == '__main__':
     wandb.init(project=f"DL2-EGNN")
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     # transform = RadiusGraph(r=1e6)
-    t_compose = Compose([AddRandomWalkPE(walk_length = 15), RadiusGraph(r = 1e6)])
-    dataset = QM9('./data/PE/data', pre_transform = t_compose)
+    t_compose = Compose([AddRandomWalkPE(walk_length=15), RadiusGraph(r=1e6)])
+    dataset = QM9('./data/PE/data', pre_transform=t_compose)
     epochs = 1000
 
     n_train, n_test = 100000, 110000
