@@ -249,7 +249,7 @@ def main(args):
                                  f"_{args.pe}{args.pe_dim if args.pe != 'nope' else ''}" \
                                  f"_epochs-{args.epochs}" \
                                  f"_batch-{args.batch_size}" \
-                                 f"_num_hidden-{args.num_hidden}" \
+                                 f"_num_hidden-{args.hidden_channels}" \
                                  f"_num_layers-{args.num_layers}.pt"
                     saved_models_dir = os.path.join(script_dir, 'saved_models')
                     if not os.path.exists(saved_models_dir):
