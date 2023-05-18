@@ -5,7 +5,7 @@
     "pe_dim": 24,
     "lspe": false,
     "seed": 42,
-    "epochs": 10,
+    "epochs": 1000,
     "batch_size": 96,
     "learning_rate": 0.0005,
     "weight_decay": 1e-16,
