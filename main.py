@@ -205,10 +205,13 @@ def main(args):
         'fc': 'fc' in args.dataset,
         'num_params': num_params
     }
-    wandb.init(project="dl2-modularized", entity="dl2-gnn-lspe", config=config, reinit=True,
-               name=f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}')
+    run_name = f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}' \
+               f'_{"yes-lspe" if args.lspe else "no-lspe"}_{"yes-dist" if args.include_dist else "no-dist"}' \
+               f'_{"yes-reduced" if args.reduced else "no-reduced"}' \
+               f'_epochs-{args.epochs}_num_layers-{args.num_layers}'
+    wandb.init(project="dl2-modularized-exp", entity="dl2-gnn-lspe", config=config, reinit=True,
+               name=run_name)
     wandb.watch(model)
-
 
     # Declare the training criterion, optimizer and scheduler
     criterion = torch.nn.L1Loss(reduction='sum')
@@ -233,8 +236,9 @@ def main(args):
                 epoch_train_mae = train(model, train_loader, criterion, optimizer, device, mean, mad)
                 epoch_val_mae = evaluate(model, val_loader, criterion, device, mean, mad)
 
-                wandb.log({'Train MAE': epoch_train_mae})
-                wandb.log({'Validation MAE': epoch_val_mae})
+                # change after to log in one step
+                wandb.log({'Train MAE': epoch_train_mae,
+                           'Validation MAE': epoch_val_mae})
 
                 # Best model based on validation MAE
                 if epoch_val_mae < best_val_mae:
@@ -244,13 +248,15 @@ def main(args):
                             "optimizer_state_dict": optimizer.state_dict(),
                             "best_mae": best_val_mae,
                             "best_epoch": epoch}
-                    model_path = f"{args.model}" \
-                                 f"_{args.dataset}" \
-                                 f"_{args.pe}{args.pe_dim if args.pe != 'nope' else ''}" \
-                                 f"_epochs-{args.epochs}" \
-                                 f"_batch-{args.batch_size}" \
-                                 f"_num_hidden-{args.hidden_channels}" \
-                                 f"_num_layers-{args.num_layers}.pt"
+                    
+                    # model path appends run_name with other details
+                    model_path = f'{run_name}' \
+                                 f'_in_c-{args.in_channels}' \
+                                 f'_h_c-{args.hidden_channels}' \
+                                 f'_o_c-{args.out_channels}' \
+                                 f'_bs-{args.batch_size}' \
+                                 f'_lr-{args.learning_rate}.pt'
+
                     saved_models_dir = os.path.join(script_dir, 'saved_models')
                     if not os.path.exists(saved_models_dir):
                         os.makedirs(saved_models_dir)
@@ -268,14 +274,15 @@ def main(args):
 
     # Load best model
     print('Loading best model...')
-    ckpt = torch.load(model_path)
+    saved_models_dir = os.path.join(script_dir, 'saved_models')
+    ckpt = torch.load(os.path.join(saved_models_dir, model_path), map_location=device)
     model.load_state_dict(ckpt["state_dict"])
 
     # Perform evaluation on test set
     print('Beginning evaluation...')
     test_mae = evaluate(model, test_loader, criterion, device, mean, mad)
     wandb.run.summary["test_mae"] = test_mae
-
+    print('Evaluation finished. Exiting...')
 
 if __name__ == '__main__':
     args = parse_options()

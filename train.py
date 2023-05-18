@@ -6,7 +6,7 @@ from tqdm import tqdm
 def evaluate(model, loader, criterion, device, mean, mad):
     mae = 0.0
     model.eval()
-    for _, batch in enumerate(loader):
+    for _, batch in enumerate(tqdm(loader)):
         batch = batch.to(device)
         target = torch.squeeze(batch.y[:, 1])
         pred = model(batch)

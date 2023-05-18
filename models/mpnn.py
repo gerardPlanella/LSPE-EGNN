@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 from torch_geometric.nn import global_add_pool
+from torch_scatter import scatter_add
 from .utils import get_pe_attribute
 
 class MPNNLayer(nn.Module):
@@ -32,15 +33,16 @@ class MPNNLayer(nn.Module):
             state = torch.cat([state, x[rec]], dim=1)
 
         if self.include_dist:
-            dist = torch.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+            dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
             state = torch.cat([state, dist], dim=1)
 
         # Pass the state through the message net
         message = self.message_mlp(state)
 
         # Aggregate messages from neighbours by summing
-        aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
+        # aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
+        # aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
+        aggr = scatter_add(message, rec, dim=0)
 
         # Pass the new state through the update network alongside x
         update = self.update_mlp(torch.cat([x, aggr], dim=1))
@@ -87,7 +89,7 @@ class MPNNLSPELayer(nn.Module):
             pe_state = torch.cat([pe_state, pe[rec]], dim=1)
 
         if self.include_dist:
-            dist = torch.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
+            dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
             state = torch.cat([state, dist], dim=1)
             pe_state = torch.cat([pe_state, dist], dim=1)
 
@@ -96,15 +98,17 @@ class MPNNLSPELayer(nn.Module):
         pos = self.pos_mlp(pe_state)
 
         # Aggregate state messages from neighbours by summing
-        aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
+        # aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
+        # aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
+        aggr = scatter_add(message, rec, dim=0)
 
         # Pass the new state through the update network alongside x
         update = self.update_mlp(torch.cat([x, aggr], dim=1))
 
         # Aggregate pos from neighbourhood by summing
-        pos_aggr = torch.zeros((x.size(0), pos.size(1)), device=x.device)
-        pos_aggr = pos_aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), pos.size(1)), pos)
+        # pos_aggr = torch.zeros((x.size(0), pos.size(1)), device=x.device)
+        # pos_aggr = pos_aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), pos.size(1)), pos)
+        pos_aggr = scatter_add(pos, rec, dim=0)
 
         # Pass the new pos state through the update network alongside pe
         update_pe = self.update_mlp_pos(torch.cat([pe, pos_aggr], dim=1))
@@ -169,7 +173,7 @@ class MPNN(nn.Module):
                 x += out
                 pe += pe_out
             else:
-                x = x + layer(x, pos, edge_index)
+                x += layer(x, pos, edge_index)
 
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
