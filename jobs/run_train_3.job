@@ -15,6 +15,7 @@ module load Anaconda3/2021.05
 cd $HOME/LSPE-EGNN
 
 # Activate the environment
+source deactivate
 source activate egnn_lspe_gpu
 
 # Config filename - change it to each filenames

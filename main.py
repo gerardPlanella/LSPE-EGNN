@@ -94,6 +94,9 @@ def parse_options():
                              'in the message state. (default: False)')
     parser.add_argument('--reduced', action='store_true',
                         help='Whether or not to used the reduced version. (default: False)')
+    parser.add_argument('--update_with_pe', action='store_true',
+                        help='Whether or not to include pe '
+                             'in the update network. (default: False)')
 
     args = parser.parse_args()
 
@@ -154,9 +157,13 @@ def get_dataset(dataset_name, pe_name, pe_dim):
     elif 'nope' not in pe_name.lower():
         transform.transforms.append(get_pe(pe_name, pe_dim))
     
-    return QM9('./data/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
+    # return QM9('./data/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
     # return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
     #            pre_transform=transform)
+
+    # In the case of NOPE, we still use the PE processed dataset,
+    #  but we don't include PE in computation
+    return QM9(f'./data/{dataset_name}_rw24', pre_transform=transform) 
 
 
 def get_model(model_name):
@@ -208,6 +215,7 @@ def main(args):
     run_name = f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}' \
                f'_{"yes-lspe" if args.lspe else "no-lspe"}_{"yes-dist" if args.include_dist else "no-dist"}' \
                f'_{"yes-reduced" if args.reduced else "no-reduced"}' \
+               f'_{"yes-update_with_pe" if args.update_with_pe else "no-update_with_pe"}' \
                f'_epochs-{args.epochs}_num_layers-{args.num_layers}'
     wandb.init(project="dl2-modularized-exp", entity="dl2-gnn-lspe", config=config, reinit=True,
                name=run_name)
