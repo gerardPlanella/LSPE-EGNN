@@ -263,7 +263,8 @@ def main(args):
                                  f'_h_c-{args.hidden_channels}' \
                                  f'_o_c-{args.out_channels}' \
                                  f'_bs-{args.batch_size}' \
-                                 f'_lr-{args.learning_rate}.pt'
+                                 f'_lr-{args.learning_rate}' \
+                                 f'_seed-{args.seed}.pt'
 
                     saved_models_dir = os.path.join(script_dir, 'saved_models')
                     if not os.path.exists(saved_models_dir):
