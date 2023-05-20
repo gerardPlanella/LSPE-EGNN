@@ -11,7 +11,7 @@
     "weight_decay": 1e-16,
     "in_channels": 11,
     "hidden_channels": 128,
-    "num_layers": 7,
+    "num_layers": 4,
     "out_channels": 1,
     "include_dist": false,
     "reduced": true
