@@ -63,12 +63,3 @@ All the running arguments alongside their explanation can be found under `main.p
 Output results and visualisations are processed directly to WandB. 
 TODO: We plan to make available reports with all the run logs via a WandB link.
 Checkpoints are stored under `saved_models`.
-
-
-
-
-
-
-
-
-
