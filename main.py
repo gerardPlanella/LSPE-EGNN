@@ -177,6 +177,7 @@ def get_model(model_name):
 def main(args):
     # Display run arguments
     pprint(args)
+    print()
 
     # Set the hardware accelerator
     device = setup_gpu()
@@ -201,7 +202,7 @@ def main(args):
 
     # Number of parameters of the model
     num_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f'Number of parameters: {num_params}')
+    print(f'Number of parameters: {num_params}\n')
 
     # Setting the WandB parameters
     config = {
@@ -293,9 +294,10 @@ def main(args):
     model.load_state_dict(ckpt["state_dict"])
 
     # Perform evaluation on test set
-    print('Beginning evaluation...')
+    print('\nBeginning evaluation...')
     test_mae = evaluate(model, test_loader, criterion, device, mean, mad)
     wandb.run.summary["test_mae"] = test_mae
+    print(f'\nTest MAE: {round(test_mae, 3)}')
     print('Evaluation finished. Exiting...')
 
 
