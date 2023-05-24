@@ -56,8 +56,10 @@ class MPNNLSPELayer(nn.Module):
         super().__init__()
         self.include_dist = kwargs['include_dist']
         self.reduced = kwargs['reduced']
+        self.update_with_pe = kwargs['update_with_pe']
         params_dist = 1 if self.include_dist else 0
         params_reduced_factor = 2 if self.reduced else 1
+        params_update_with_pe_factor = 3 if self.update_with_pe else 2
 
         # Message network: phi_m
         self.message_mlp = nn.Sequential(
@@ -71,7 +73,7 @@ class MPNNLSPELayer(nn.Module):
 
         # Update network: phi_h
         self.update_mlp = nn.Sequential(
-            nn.Linear(2 * num_hidden, num_hidden), nn.SiLU(),
+            nn.Linear(params_update_with_pe_factor * num_hidden, num_hidden), nn.SiLU(),
             nn.Linear(num_hidden, num_hidden))
 
         # PE update network: phi_p
@@ -103,7 +105,8 @@ class MPNNLSPELayer(nn.Module):
         aggr = scatter_add(message, rec, dim=0)
 
         # Pass the new state through the update network alongside x
-        update = self.update_mlp(torch.cat([x, aggr], dim=1))
+        update_state = [x, pe, aggr] if self.update_with_pe else [x, aggr]
+        update = self.update_mlp(torch.cat(update_state, dim=1))
 
         # Aggregate pos from neighbourhood by summing
         # pos_aggr = torch.zeros((x.size(0), pos.size(1)), device=x.device)
@@ -127,8 +130,6 @@ class MPNN(nn.Module):
         self.pe = pe
         self.pe_dim = pe_dim if pe != 'nope' else 0
         self.lspe = lspe
-
-        self.include_dist = kwargs['include_dist']
 
         # Pre-condition in case we are using LSPE
         assert not (self.pe == 'nope' and self.lspe), "LSPE has to have initialized PE."

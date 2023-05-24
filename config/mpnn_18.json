@@ -1,6 +1,6 @@
 {
     "model": "mpnn",
-    "dataset": "qm9",
+    "dataset": "qm9_fc",
     "pe": "nope",
     "pe_dim": 24,
     "lspe": false,
@@ -11,8 +11,9 @@
     "weight_decay": 1e-16,
     "in_channels": 11,
     "hidden_channels": 128,
-    "num_layers": 4,
+    "num_layers": 7,
     "out_channels": 1,
-    "include_dist": false,
-    "reduced": true
+    "include_dist": true,
+    "reduced": false,
+    "update_with_pe": false
 }

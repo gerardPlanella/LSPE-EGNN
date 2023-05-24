@@ -97,6 +97,9 @@ def parse_options():
                              'in the message state. (default: False)')
     parser.add_argument('--reduced', action='store_true',
                         help='Whether or not to used the reduced version. (default: False)')
+    parser.add_argument('--update_with_pe', action='store_true',
+                        help='Whether or not to include pe '
+                             'in the update network. (default: False)')
 
     args = parser.parse_args()
 
@@ -156,11 +159,10 @@ def get_dataset(dataset_name, pe_name, pe_dim):
         transform.transforms.append(RadiusGraph(1e6))
     elif 'nope' not in pe_name.lower():
         transform.transforms.append(get_pe(pe_name, pe_dim))
-
+    # In the case of NOPE, we still use the PE processed dataset,
+    #  but we don't include PE in computation
     data_path = os.path.join(script_dir, 'data')
-    return QM9(f'{data_path}/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
-    # return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
-    #            pre_transform=transform)
+    return QM9(f'{data_path}/{dataset_name}_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
 
 
 def get_model(model_name):
@@ -213,6 +215,7 @@ def main(args):
     run_name = f'{args.model}_{args.dataset}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}' \
                f'_{"yes-lspe" if args.lspe else "no-lspe"}_{"yes-dist" if args.include_dist else "no-dist"}' \
                f'_{"yes-reduced" if args.reduced else "no-reduced"}' \
+               f'_{"yes-update_with_pe" if args.update_with_pe else "no-update_with_pe"}' \
                f'_epochs-{args.epochs}_num_layers-{args.num_layers}'
     wandb.init(project="dl2-modularized-exp", entity="dl2-gnn-lspe", config=config, reinit=True,
                name=run_name)
@@ -245,7 +248,6 @@ def main(args):
                     epoch_train_mae = train(model, train_loader, criterion, optimizer, device, mean, mad)
                     epoch_val_mae = evaluate(model, val_loader, criterion, device, mean, mad)
 
-                    # change after to log in one step
                     wandb.log({'Train MAE': epoch_train_mae,
                                'Validation MAE': epoch_val_mae})
 
@@ -264,7 +266,8 @@ def main(args):
                                      f'_h_c-{args.hidden_channels}' \
                                      f'_o_c-{args.out_channels}' \
                                      f'_bs-{args.batch_size}' \
-                                     f'_lr-{args.learning_rate}.pt'
+                                     f'_lr-{args.learning_rate}' \
+                                     f'_seed-{args.seed}.pt'
 
                         saved_models_dir = os.path.join(script_dir, 'saved_models')
                         if not os.path.exists(saved_models_dir):

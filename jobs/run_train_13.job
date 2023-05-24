@@ -19,8 +19,8 @@ source deactivate
 source activate egnn_lspe_gpu
 
 # Config filename - change it to each filenames
-# for other corresponding hyper-param settings
-config=mpnn_3.json
+# for other corresponding hyper-param swettings
+config=mpnn_13.json
 
 # Running python command
 srun python main.py --config $config

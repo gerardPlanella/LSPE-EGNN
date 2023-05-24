@@ -165,3 +165,4 @@ checkpoints/
 *.out
 LSPE-EGNN/
 saved_models/
+.DS_Store
