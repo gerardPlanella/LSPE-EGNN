@@ -156,8 +156,9 @@ def get_dataset(dataset_name, pe_name, pe_dim):
         transform.transforms.append(RadiusGraph(1e6))
     elif 'nope' not in pe_name.lower():
         transform.transforms.append(get_pe(pe_name, pe_dim))
-    
-    return QM9('./data/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
+
+    data_path = os.path.join(script_dir, 'data')
+    return QM9(f'{data_path}/qm9_rw24', pre_transform=Compose([AddRandomWalkPE(pe_dim)]))
     # return QM9(f'./data/{dataset_name}_{args.pe}{args.pe_dim if args.pe != "nope" else ""}',
     #            pre_transform=transform)
 
@@ -285,7 +286,7 @@ def main(args):
     else:
         model_path = os.path.join(saved_models_dir, args.evaluate)
         if not os.path.exists(model_path):
-            raise TypeError('Model path not recognized')
+            raise TypeError(f'Model path not recognized: {model_path}')
         print(f'Loading model with weights stored at {model_path}...')
 
     ckpt = torch.load(os.path.join(saved_models_dir, model_path), map_location=device)
