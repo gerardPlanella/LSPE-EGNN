@@ -55,6 +55,9 @@ def parse_options():
     parser.add_argument('--write_config_to', type=str, default=None, metavar='S',
                         help='Writes the current arguments as a json file for '
                              'config with the specified filename.')
+    parser.add_argument('--evaluate', type=str, default=None, metavar='S',
+                        help='Directly evaluates the model with the model weights'
+                             'of the path specified here. No need to specify the directory.')
 
     # General Training parameters
     parser.add_argument('--model', type=str, default='mpnn', metavar='S',
@@ -227,54 +230,64 @@ def main(args):
     mad = sum([abs(v - mean) for v in values]) / len(values)
     mean, mad = mean.to(device), mad.to(device)
 
-    print('Beginning training...')
-    try:
-        with tqdm(range(args.epochs)) as t:
-            for epoch in t:
-                t.set_description(f'Epoch {epoch}')
-                start = time.time()
-                epoch_train_mae = train(model, train_loader, criterion, optimizer, device, mean, mad)
-                epoch_val_mae = evaluate(model, val_loader, criterion, device, mean, mad)
+    # Skip training if the evaluate parameter is set.
+    skip_train = args.evaluate is not None
 
-                # change after to log in one step
-                wandb.log({'Train MAE': epoch_train_mae,
-                           'Validation MAE': epoch_val_mae})
+    if not skip_train:
+        print('Beginning training...')
+        try:
+            with tqdm(range(args.epochs)) as t:
+                for epoch in t:
+                    t.set_description(f'Epoch {epoch}')
+                    start = time.time()
+                    epoch_train_mae = train(model, train_loader, criterion, optimizer, device, mean, mad)
+                    epoch_val_mae = evaluate(model, val_loader, criterion, device, mean, mad)
 
-                # Best model based on validation MAE
-                if epoch_val_mae < best_val_mae:
-                    best_val_mae = epoch_val_mae
-                    wandb.run.summary["best_val_mae"] = best_val_mae
-                    ckpt = {"state_dict": model.state_dict(),
-                            "optimizer_state_dict": optimizer.state_dict(),
-                            "best_mae": best_val_mae,
-                            "best_epoch": epoch}
-                    
-                    # model path appends run_name with other details
-                    model_path = f'{run_name}' \
-                                 f'_in_c-{args.in_channels}' \
-                                 f'_h_c-{args.hidden_channels}' \
-                                 f'_o_c-{args.out_channels}' \
-                                 f'_bs-{args.batch_size}' \
-                                 f'_lr-{args.learning_rate}.pt'
+                    # change after to log in one step
+                    wandb.log({'Train MAE': epoch_train_mae,
+                               'Validation MAE': epoch_val_mae})
 
-                    saved_models_dir = os.path.join(script_dir, 'saved_models')
-                    if not os.path.exists(saved_models_dir):
-                        os.makedirs(saved_models_dir)
-                    torch.save(ckpt, os.path.join(saved_models_dir, model_path))
+                    # Best model based on validation MAE
+                    if epoch_val_mae < best_val_mae:
+                        best_val_mae = epoch_val_mae
+                        wandb.run.summary["best_val_mae"] = best_val_mae
+                        ckpt = {"state_dict": model.state_dict(),
+                                "optimizer_state_dict": optimizer.state_dict(),
+                                "best_mae": best_val_mae,
+                                "best_epoch": epoch}
 
-                # Perform LR step
-                scheduler.step()
+                        # model path appends run_name with other details
+                        model_path = f'{run_name}' \
+                                     f'_in_c-{args.in_channels}' \
+                                     f'_h_c-{args.hidden_channels}' \
+                                     f'_o_c-{args.out_channels}' \
+                                     f'_bs-{args.batch_size}' \
+                                     f'_lr-{args.learning_rate}.pt'
 
-                # Update the postfix of tqdm with every iteration
-                t.set_postfix(time=time.time() - start, lr=optimizer.param_groups[0]['lr'],
-                              train_loss=epoch_train_mae, val_loss=epoch_val_mae)
+                        saved_models_dir = os.path.join(script_dir, 'saved_models')
+                        if not os.path.exists(saved_models_dir):
+                            os.makedirs(saved_models_dir)
+                        torch.save(ckpt, os.path.join(saved_models_dir, model_path))
 
-    except KeyboardInterrupt:
-        print('Exiting training early because of keyboard interrupt.')
+                    # Perform LR step
+                    scheduler.step()
 
-    # Load best model
-    print('Loading best model...')
+                    # Update the postfix of tqdm with every iteration
+                    t.set_postfix(time=time.time() - start, lr=optimizer.param_groups[0]['lr'],
+                                  train_loss=epoch_train_mae, val_loss=epoch_val_mae)
+
+        except KeyboardInterrupt:
+            print('Exiting training early because of keyboard interrupt.')
+
     saved_models_dir = os.path.join(script_dir, 'saved_models')
+    if not skip_train:
+        print('Loading best model...')
+    else:
+        model_path = os.path.join(saved_models_dir, args.evaluate)
+        if not os.path.exists(model_path):
+            raise TypeError('Model path not recognized')
+        print(f'Loading model with weights stored at {model_path}...')
+
     ckpt = torch.load(os.path.join(saved_models_dir, model_path), map_location=device)
     model.load_state_dict(ckpt["state_dict"])
 
@@ -283,6 +296,7 @@ def main(args):
     test_mae = evaluate(model, test_loader, criterion, device, mean, mad)
     wandb.run.summary["test_mae"] = test_mae
     print('Evaluation finished. Exiting...')
+
 
 if __name__ == '__main__':
     args = parse_options()
