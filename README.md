@@ -1,5 +1,9 @@
 ## Project Description
 
+todo (abstract of our paper)
+
+---
+
 ## Setting up the Environment
 In order to set up the environment for reproducing our experiments, 
 install the appropriate conda environment that suits your hardware specifications. 
@@ -60,6 +64,7 @@ All the running arguments alongside their explanation can be found under `main.p
 
 ### Output, checkpoints and visualizations
 
-Output results and visualisations are processed directly to WandB. 
-TODO: We plan to make available reports with all the run logs via a WandB link.
-Checkpoints are stored under `saved_models`.
+Output results and visualisations are processed directly to WandB, and are accessible [here](https://api.wandb.ai/links/dl2-gnn-lspe/krcsymc6).  
+The saved model weights are stored under `saved_models`. We acknowledge that not anybody might have access to the required computational 
+resources to train each of the models we tested, and thus we provide the saved model weights in the HuggingFace repository [here](https://huggingface.co/datasets/lucapantea/egnn-lspe).
+See [demos/main.ipynb](demos/main.ipynb) for an overview of how to load the model weights and evaluate a given odel configuration.   
