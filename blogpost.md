@@ -12,8 +12,7 @@ global structural information of a graph. Their applications span a wide range o
 recommender systems [Ying et al., 2018] to drug discovery [Han et al., 2021].
 
 A rather significant role in the success of GNNs is partially attributed to the message-passing
-framework [Gilmer et al., 2017a ], which enables nodes in a graph to exchange and aggregate in-
-formation through iterative message passing steps, enhancing their representation and facilitating
+framework [Gilmer et al., 2017a ], which enables nodes in a graph to exchange and aggregate information through iterative message passing steps, enhancing their representation and facilitating
 effective learning on graph-structured data. However, it has been shown that this framework
 suffers from fundamental limitations [ Xu et al., 2018 ], which constrain their expressivity. More
 specifically, GNNs are shown to be as powerful as the 1-dimensional Weisfeiler-Lehman (WL) test
