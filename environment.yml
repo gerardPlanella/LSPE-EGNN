@@ -1,4 +1,4 @@
-name: egnn_lspe
+name: egnn_lspe_cpu
 channels:
   - pytorch
   - conda-forge
@@ -11,7 +11,9 @@ dependencies:
   - torchvision=0.14.0
   - torchaudio=0.13.0
   - pip:
-    - pytorch-lightning==1.7.7
+    - torch-sparse==0.6.13
+    - torch-cluster==1.6.0
+    - torch-scatter==2.1.1
     - tensorboard==2.10.1
     - tabulate>=0.8.9
     - tqdm>=4.62.3
@@ -21,7 +23,7 @@ dependencies:
     - matplotlib>=3.4.3
     - seaborn>=0.11.2
     - ipywidgets>=7.6.5
-    - torch_geometric==2.3.0
+    - torch-geometric==2.3.0
     - wandb
     - rdkit
     
