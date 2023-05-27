@@ -5,8 +5,7 @@ You can alternately read our [PDF version of this blogpost](https://github.com/g
 ## Introduction
 
 Graph Neural Networks (GNNs), dating back to the 1990s, [Sperduti, 1993, Gori et al., 2005,
-Bruna et al., 2014, Kipf and Welling, 2016] have ascended from a niche of representation learn-
-ing to one of its most successful methods. GNNs are commonly used for analyzing and processing
+Bruna et al., 2014, Kipf and Welling, 2016] have ascended from a niche of representation learning to one of its most successful methods. GNNs are commonly used for analyzing and processing
 graph data, as they have the capability to learn using local information and, to some extent, the
 global structural information of a graph. Their applications span a wide range of domains, from
 recommender systems [Ying et al., 2018] to drug discovery [Han et al., 2021].
@@ -86,18 +85,15 @@ which ultimately renders such architectures intractable for large graphs.
 
 ### Positional Encodings
 
-Positional encodings (PE) are a fundamental concept that significantly influences the effective-
-ness of many network architectures, including CNNs [Lecun et al., 1998 ], RNNs [Hopfield, 1982 ,
+Positional encodings (PE) are a fundamental concept that significantly influences the effectiveness of many network architectures, including CNNs [Lecun et al., 1998 ], RNNs [Hopfield, 1982 ,
 Hochreiter and Schmidhuber, 1997], and most recently, Transformers [Vaswani et al., 2017], by
-providing a means to infuse positional information into deep learning models. However, infer-
-ring nodes’ positions in any given graph is a non-trivial task due to the absence of a canon-
+providing a means to infuse positional information into deep learning models. However, inferring nodes’ positions in any given graph is a non-trivial task due to the absence of a canon-
 ical positioning method for capturing both local and global information. While GNNs have
 been shown to outperform traditional algorithms for node classification, subpar performance
 was demonstrated in [Hu et al., 2020] when compared to simple heuristics such as Adamic Adar
 [Adamic and Adar, 2003] on link prediction tasks [Liben-Nowell and Kleinberg, 2003]. Recent work
 [ Srinivasan and Ribeiro, 2019, Br ̈uel-Gabrielsson et al., 2022 , Wang et al., 2022] have (empirically)
-rendered the addition of PE in GNNs crucial in achieving state-of-the-art (SOTA) in graph predic-
-tion tasks. Several candidates for PE have been proposed, such as Index PE [Murphy et al., 2019],
+rendered the addition of PE in GNNs crucial in achieving state-of-the-art (SOTA) in graph prediction tasks. Several candidates for PE have been proposed, such as Index PE [Murphy et al., 2019],
 Laplacian Eigenvectors [Dwivedi et al., 2022] and learnable position-aware embeddings based on
 random anchor node sets [You et al., 2019]. Another relevant method which this study focuses on
 involves diffusion-based Random walks [Bourgain, 1985 , Chung, 1997]. The encodings produced
@@ -170,8 +166,7 @@ in Section 2.2. The detailed formulas for each model can be found in Tables 1 an
 
 ## Experiments
 
-Data The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently stud-
-ied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
+Data The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
 consisting of around 18 nodes. In this dataset, the graphs represent molecules, with the nodes
 representing atoms and the undirected, typed edges representing various types of bonds between these atoms. The objective of analyzing this dataset is to predict 13 quantum chemical properties.
 Nevertheless, this study only focuses on inferring the Isotropic Polarizability α.
@@ -246,8 +241,7 @@ with Geometry.
 When analysing the results for the models using LSPE, they show that the normal MPNN model
 always results in an increased performance while the opposite happens for the Isotropic MPNN. We
 thus hypothesise that **the model is not complex enough to effectively use the learnt PEs.**
-For LSPE with Geometry, we again see a similar effect as previously mentioned, with MPNN-LSPE-
-Geom achieving consistently the best performance for 4 and 7 layers. For the Isotropic MPNN, we
+For LSPE with Geometry, we again see a similar effect as previously mentioned, with MPNN-LSPE-Geom achieving consistently the best performance for 4 and 7 layers. For the Isotropic MPNN, we
 experience a performance gain with respect to the base model, but infusing PEs (PE-Geom) still
 results in a better performance. It is worth mentioning that the performance gap between PE-Geom
 and LSPE-Geom becomes smaller for the Isotropic model as the number of layers increases, which supports our previous claim, that more complexity is needed to use the learnable encodings efficiently.
@@ -266,8 +260,7 @@ without geometry.
 
 ## Conclusion 
 
-This work examines how injecting topological information into the EGNN model affects its perfor-
-mance in a fully connected and non-fully connected setting. Through an extensive investigation,
+This work examines how injecting topological information into the EGNN model affects its performance in a fully connected and non-fully connected setting. Through an extensive investigation,
 we compared the original architecture with an enhanced version incorporating additional implicit
 topological information via Random Walk Positional Encodings. Our experiments revealed how,
 depending on the model’s size, using implicit topological information may be beneficial to the
@@ -324,8 +317,7 @@ Information Processing Systems, 34:2625–2640.
 Israel Journal of Mathematics, 52:46–52.
 <br /><br />
 
-[Bouritsas et al., 2022] Bouritsas, G., Frasca, F., Zafeiriou, S., and Bronstein, M. M. (2022). Improv-
-ing graph neural network expressivity via subgraph isomorphism counting. IEEE Transactions on
+[Bouritsas et al., 2022] Bouritsas, G., Frasca, F., Zafeiriou, S., and Bronstein, M. M. (2022). Improving graph neural network expressivity via subgraph isomorphism counting. IEEE Transactions on
 Pattern Analysis and Machine Intelligence, 45(1):657–668.
 <br /><br />
 
