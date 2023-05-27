@@ -1,6 +1,6 @@
 # GE-LSPE: Geometrically Enhanced Learnable Structural and Positional Encodings
 
-For a better read, read report.pdf in the repository.
+You can alternately read our [PDF version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/article.pdf).
 
 ## Introduction
 
