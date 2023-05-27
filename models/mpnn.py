@@ -81,8 +81,6 @@ class MPNNLSPELayer(nn.Module):
             nn.Linear(2 * num_hidden, num_hidden), nn.Tanh(),
             nn.Linear(num_hidden, num_hidden), nn.Tanh())
 
-
-    
     def forward(self, x, pos, edge_index, pe):
         send, rec = edge_index
         state = torch.cat([x[send], pe[send]], dim=-1)
