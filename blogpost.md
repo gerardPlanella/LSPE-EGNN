@@ -120,7 +120,7 @@ positional properties. The combination of structural and positional encodings pr
 representation of the graph, manifested through more expressive node embeddings, leading to
 improved performance in node classification, link prediction, and graph generation tasks.
 
-![LSPE Equations](./images/LSPE-Equations.png)
+![LSPE Equations](./images/LSPE-equations.png)
 
 ## Methodology
 
