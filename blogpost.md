@@ -120,7 +120,12 @@ attributed by RWPE. After some contemplation, one can observe from Figure 1a and
 with the same attributed colour are isomorphic in the graph, i.e. for k ≥ 7, the nodes have the same
 k-step neighbourhood.
 
-![RWPE](./images/molecules-appendix.png)
+<p align="center">
+    <img src="./images/molecules.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Figure 1.</em> Sample molecule graphs from the QM9 dataset, alongside the visualization of the corresponding molecule. The corresponding graph are <strong>8150</strong> (left) and <strong>1755</strong> (right), the number of nodes in the graphs and the number of unique RWPEs are labelled against the figures.
+</p>
 
 ### Learnable Structural and Positional Encodings
 
