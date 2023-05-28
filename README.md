@@ -1,3 +1,5 @@
+# GeTo-LSPE: Geometry and Topology through Learnable Structural and Positional Encodings
+
 ## Project Description
 
 
