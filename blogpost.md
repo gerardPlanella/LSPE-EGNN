@@ -111,6 +111,8 @@ attributed by RWPE. After some contemplation, one can observe from Figure 1a and
 with the same attributed colour are isomorphic in the graph, i.e. for k ≥ 7, the nodes have the same
 k-step neighbourhood.
 
+![RWPE](./images/molecules-appendix.png)
+
 ### Learnable Structural and Positional Encodings
 
 Learnable Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] have been proposed as
