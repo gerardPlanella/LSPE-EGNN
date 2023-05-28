@@ -533,7 +533,7 @@ M. M. (2022). Understanding over-squashing and bottlenecks on graphs via curvatu
 Kaiser, L., and Polosukhin, I. (2017). Attention is all you need. CoRR, abs/1706.03762.
 <br /><br />
 
-[Veliˇckovi ́c et al., 2017] Veliˇckovi ́c, P., Cucurull, G., Casanova, A., Romero, A., Lio, P., and Bengio,
+[Velickovi c et al., 2017] Veliˇckovi ́c, P., Cucurull, G., Casanova, A., Romero, A., Lio, P., and Bengio,
 Y. (2017). Graph attention networks. arXiv preprint arXiv:1710.10903.
 [Wang et al., 2022] Wang, H., Yin, H., Zhang, M., and Li, P. (2022). Equivariant and stable
 positional encoding for more powerful graph neural networks.
