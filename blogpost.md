@@ -2,6 +2,10 @@
 
 You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/article.pdf).
 
+## TL;DR
+
+Graph neural networks (GNNs) have emerged as the dominant learning architectures for graph data. Among them, Equivariant Graph Neural Networks (EGNNs) introduced a novel approach to incorporate geometric information, ensuring equivariance throughout the system. However, the EGNN architecture has two main limitations. Firstly, it underutilizes the topological information inherent in the graph structure, and secondly, achieving SOTA performance necessitates a fully connected graph, which may not always be feasible in certain applications. In addition, the Learnable structural and Positional Encodings (LSPE) framework proposes to decouple structural and positional representations to learn better these two essential properties by using implicit topological information. In this work, we investigate the extent to which structural encodings in geometric methods contribute in capturing topological information. Furthermore, inspired by Equivariant Message Passing Simplicial Network (EMPSN) architecture, which integrates geometric and topological information on simplicial complexes, we introduce an approach that leverages geometry to enhance positional encodings within the LSPE framework. We empirically show through our proposed method that conditioning the learnable PEs with the absolute distance between particles (for the QM9 dataset) can be beneficial to learn better representations, given that the model has sufficient complexity. Our method exhibits promising potential for graph datasets with limited connectivity, offering opportunities for advantageous outcomes by effectively handling situations where achieving a fully connected graph is not feasible.
+
 ## Introduction
 
 Graph Neural Networks (GNNs), dating back to the 1990s, [Sperduti, 1993, Gori et al., 2005,
@@ -129,6 +133,24 @@ $$\\begin{equation}
 
 As we observe in the above equations, it becomes apparent that the only deviations from the original MPNN equations are the addition of a positional representation update as seen in the last equation above, and the concatenation of these trainable PEs with the node structural features as seen in the first equation above.
 
+### Topological Approaches
+
+No explicit topological properties have been used in all the aforementioned techniques, where 
+relational structure about the system in a higher dimensional space could be encoded. The Graph
+Substructure Network (GSN) [ Bouritsas et al., 2022] is considered to be one of the earlier methods
+that incorporated topology into its architecture, which laid the foundation for many subsequent
+research papers on topological deep learning [Papillon et al., 2023 ]. GSN enhanced the message-
+passing scheme with structural features extracted by (sub-)graph isomorphism. Furthermore, a
+novel message-passing procedure was introduced [ Bodnar et al., 2021] that focuses on the ”lifting”
+map of induced cycles within a graph. This enables the network to distinguish between rings
+within atoms on molecular datasets more easily, increasing its expressivity beyond that of the WL
+test. Finally, E(n) equivariant Message Passing Simplicial Networks [ Eijkelboom et al., 2023] have
+combined geometric and topological graph approaches in their architecture. They re-formulated
+the original EGNN [Satorras et al., 2021] to enable learning of features on simplicial complexes.
+The approach involves lifting the map and including information about the relative positions of
+communicating simplices in the message-passing formulation, demonstrating the potential to obtain
+SOTA for approaches that combine topology and geometry.
+
 
 ## Novel Contribution
 
@@ -150,17 +172,22 @@ To further enhance the expressive power of GNNs, this research project takes ins
 Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
 novel approach that combines geometric and topological information on simplicial complexes. Our
 goal is to develop a generic method that also combines geometric and topological information by
-improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. We highlight the
-following contributions:
+improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. Some of the higlighted contributions of this project are the following:
 
-- We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs.
+<!-- - We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs. -->
 
-- We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information.
+<!-- - We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information. -->
 
-Recognizing the significant role of node distances in capturing the graph’s topology within the
+- By providing PE to geometric methods, we empirically find that topological information through structural encodings improves geometric methods in shallow models, while this effect diminishes as the models become deeper.
+- We introduce a novel approach to incorporate geometric information to structural methods based on LSPE, which results in better learnt representations, given that the model has sufficient complexity.
+
+<!-- Recognizing the significant role of node distances in capturing the graph’s topology within the
 original EGNN architecture and the promising results of the LSPE framework as previously mentioned, we propose a method which combines these two techniques. By integrating the
 geometrical features of the graph (node distances in the case of QM9) with topological features
 given by PEs, we seek to achieve more expressive node attributes.
+ -->
+
+<!-- Firstly, we empirically find that by providing PE to EGNN, topological information through structural encodings improve geometric methods in shallow models and its effect diminishes as the model becomes more complex, hinting that EGNN learns topology through geometry. Secondly, the results of our proposed method indicate that conditioning the learnable PEs with the distance can be beneficial to learn better representations, given that the model has sufficient complexity.  -->
 
 ### GeTo-MPNN
 
@@ -189,7 +216,7 @@ to calculate messages, allowing us to test our method on less expressive models.
 In order to quantify the contribution of geometry in the LSPE framework, we run a set of experiments
 on 6 variants. These include the basic MPNN model, adding Geometry only (for which the Standard
 MPNN with Geometry resembles the EGNN), PE only, PE and Geometry, LSPE and LSPE with
-Geometry. The last one being our proposal described in 3.1. For all the aforementioned models
+Geometry. The last one being our proposal described in Related Works. For all the aforementioned models
 including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme.
 The detailed formulas for each model can be found in Tables 1 and 2.
 
@@ -225,10 +252,10 @@ tested a 10-layer Isotropic MPNN. Each network has 128 features per hidden layer
 SiLU activation function [Elfwing et al., 2017] as a non-linearity, with the exception of networks
 related to PEs, which use Tanh as an activation function. The predicted value is obtained by
 applying a sum-pooling operation followed by two layers of MLPs, which map the node embeddings
-h(l=L) to the output of the model. All models have been trained under the same configuration,
+$h^{l=L}$ to the output of the model. All models have been trained under the same configuration,
 with a batch size of 96, 1000 epochs, the Adam optimizer with a learning rate set at 0.0005 with
 a Cosine Annealing scheduler [Loshchilov and Hutter, 2017] and a weight decay of 10−16. Further
-implementation details can be found in the repository’s1 implementation of the different models.
+implementation details can be found in the repository’s implementation of the different models.
 
 ## Results and Analysis
 
@@ -352,8 +379,7 @@ investigated is whether we can use less complex layers to learn the same PEs by 
 This becomes particularly relevant as we observe the enhanced performance with increased layers.
 Moreover, our present method of conditioning, achieved exclusively through concatenation, could be
 extended to alternatives that could potentially offer more efficient or expressive results. Additionally,
-our methodology presents promising potential for application on datasets where topological informa-
-tion is valuable but it is computationally prohibitive to connect all nodes. Through the utilization
+our methodology presents promising potential for application on datasets where topological information is valuable but it is computationally prohibitive to connect all nodes. Through the utilization
 of our approach, one could potentially achieve an equilibrium between computational feasibility and
 the use of topological information. Moreover, while the EGNN paper[Satorras et al., 2021] tests the
 model in the QM9 dataset with the nodes’ coordinates fixed, one could evaluate the same framework
@@ -511,7 +537,7 @@ M. M. (2022). Understanding over-squashing and bottlenecks on graphs via curvatu
 Kaiser, L., and Polosukhin, I. (2017). Attention is all you need. CoRR, abs/1706.03762.
 <br /><br />
 
-[Veliˇckovi ́c et al., 2017] Veliˇckovi ́c, P., Cucurull, G., Casanova, A., Romero, A., Lio, P., and Bengio,
+[Velickovi c et al., 2017] Veliˇckovi ́c, P., Cucurull, G., Casanova, A., Romero, A., Lio, P., and Bengio,
 Y. (2017). Graph attention networks. arXiv preprint arXiv:1710.10903.
 [Wang et al., 2022] Wang, H., Yin, H., Zhang, M., and Li, P. (2022). Equivariant and stable
 positional encoding for more powerful graph neural networks.
