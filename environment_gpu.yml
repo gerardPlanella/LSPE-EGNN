@@ -24,7 +24,7 @@ dependencies:
     - ipywidgets>=7.6.5
     - torch-sparse==0.6.17
     - torch-cluster==1.6.0
-    - torch_geometric==2.3.0
+    - torch_geometric==2.3.1
     - torch-scatter==2.1.1
     - brotli
     - wandb
