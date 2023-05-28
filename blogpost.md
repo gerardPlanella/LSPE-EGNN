@@ -238,7 +238,7 @@ geometrical information, the absolute distance between nodes, can be utilized ef
 better node embeddings.
 
 
-In our first experiment, as mentioned in Subsection 2.3, we evaluated the EGNN using both
+In our first experiment, as previously mentioned, we evaluated the EGNN using both
 original edges, and fully connected ones, with and without infusing the Positional Encodings. When
 comparing the performance for the different kinds of connections between the nodes, it can be
 seen from Table 4, that **the performance when all the nodes are connected is better in
