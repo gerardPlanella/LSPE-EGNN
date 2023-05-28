@@ -1,38 +1,36 @@
-# GE-LSPE: Geometrically Enhanced Learnable Structural and Positional Encodings
+# GeTo-LSPE: Geometry and Topology through Learnable Structural and Positional Encodings
 
-For a better read, read report.pdf in the repository.
+You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/article.pdf).
 
 ## Introduction
 
 Graph Neural Networks (GNNs), dating back to the 1990s, [Sperduti, 1993, Gori et al., 2005,
-Bruna et al., 2014, Kipf and Welling, 2016 ] have ascended from a niche of representation learn-
-ing to one of its most successful methods. GNNs are commonly used for analyzing and processing
+Bruna et al., 2014, Kipf and Welling, 2016] have ascended from a niche of representation learning to one of its most successful methods. GNNs are commonly used for analyzing and processing
 graph data, as they have the capability to learn using local information and, to some extent, the
 global structural information of a graph. Their applications span a wide range of domains, from
 recommender systems [Ying et al., 2018] to drug discovery [Han et al., 2021].
 
 A rather significant role in the success of GNNs is partially attributed to the message-passing
-framework [Gilmer et al., 2017a ], which enables nodes in a graph to exchange and aggregate in-
-formation through iterative message passing steps, enhancing their representation and facilitating
+framework [Gilmer et al., 2017a], which enables nodes in a graph to exchange and aggregate information through iterative message passing steps, enhancing their representation and facilitating
 effective learning on graph-structured data. However, it has been shown that this framework
-suffers from fundamental limitations [ Xu et al., 2018 ], which constrain their expressivity. More
+suffers from fundamental limitations [Xu et al., 2018], which constrain their expressivity. More
 specifically, GNNs are shown to be as powerful as the 1-dimensional Weisfeiler-Lehman (WL) test
-[ Weisfeiler and Leman, 1968] in distinguishing non-isomorphic (sub-)graphs [ Morris et al., 2018].
+[Weisfeiler and Leman, 1968] in distinguishing non-isomorphic (sub-)graphs [Morris et al., 2018].
 Due to the locality of the message-passing framework, each node in GNNs only aggregates from its
 direct neighbours. This local view can be a drawback when trying to learn global graph properties or
 when the important features of a node are dependent on nodes beyond its immediate neighbourhood.
 
 Recent research has been dedicated to enhancing the discriminative capabilities of GNNs, pushing
 past the constraints imposed by the 1-WL test. One solution to this issue involves providing
-inductive biases to the GNNs in the form of the data’s geometric information [ Satorras et al., 2021,
+inductive biases to the GNNs in the form of the data’s geometric information [Satorras et al., 2021,
 Brandstetter et al., 2021]. While incorporating the distance norm improves the model’s performance,
 it still suffers from limitations in expressivity by not being able to learn explicit higher-dimensional
 features present in the graph. A different line of research focuses on providing this information through
-topology by integrating Positional Encodings (PE) such as Random Walk-based [ Bourgain, 1985 ,
-Chung, 1997 ] or Laplacian Eigenvector-based Encodings [Dwivedi et al., 2022 ]. These techniques
+topology by integrating Positional Encodings (PE) such as Random Walk-based [Bourgain, 1985,
+Chung, 1997] or Laplacian Eigenvector-based Encodings [Dwivedi et al., 2022]. These techniques
 aim to capture more global information and provide a richer representation of the graph beyond
 immediate neighbourhood interactions. Another more recent approach involves using Learnable
-Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021 ] to decouple the structural (node
+Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] to decouple the structural (node
 features) and positional (node’s position within the graph) representations within GNNs, allowing
 them to be learned independently and leading to an increased expressivity and performance.
 To further enhance the expressive power of GNNs, this research project takes inspiration from the
@@ -70,11 +68,12 @@ propagation, where each node aggregates information from its neighbours, and nod
 the aggregated information is used to update the node’s representation. MPNNs have demonstrated
 strong performance in various graph-related tasks, including node classification, link prediction, and
 graph generation. Several notable MPNN variants include Graph Convolutional Networks (GCNs)
-[Kipf and Welling, 2016 ], Graph Attention Networks (GATs) [ Veliˇckovi ́c et al., 2017 ], GraphSAGE
-[ Hamilton et al., 2017] and Graph Isomorphism Networks (GIN) [Xu et al., 2018 ], each offering
+[Kipf and Welling, 2016], Graph Attention Networks (GATs) [Velickovic et al., 2017], GraphSAGE
+[ Hamilton et al., 2017] and Graph Isomorphism Networks (GIN) [Xu et al., 2018], each offering
 unique strategies for message passing and aggregation.
 
-[![\\ \begin{equation} \\ \label{eq:1} \\ h_i^{\ell+1} =f_h\left(\left[\begin{array}{c} \\ h_i^{\ell} \\ \\ p_i^{\ell} \\ \end{array}\right],\left\{\left[\begin{array}{c} \\ h_j^{\ell} \\ \\ p_j^{\ell} \\ \end{array}\right]\right\}_{j \in \mathcal{N}_i}, e_{i j}^{\ell}\right), h_i^{\ell+1}, h_i^{\ell} \in \mathbb{R}^d, \\ \end{equation} \\  \\ \begin{equation} \\ \label{eq:2} \\ e_{i j}^{\ell+1} =f_e\left(h_i^{\ell}, h_j^{\ell}, e_{i j}^{\ell}\right), e_{i j}^{\ell+1}, e_{i j}^{\ell} \in \mathbb{R}^d \\ \end{equation} \\  \\ \begin{equation} \\ \label{eq:3} \\     p_i^{\ell+1}  =f_p\left(p_i^{\ell},\left\{p_j^{\ell}\right\}_{j \in \mathcal{N}_i}, e_{i j}^{\ell}\right), p_i^{\ell+1}, p_i^{\ell} \in \mathbb{R}^d \\ \end{equation}](https://latex.codecogs.com/svg.latex?%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A1%7D%20%5C%5C%20h_i%5E%7B%5Cell%2B1%7D%20%3Df_h%5Cleft(%5Cleft%5B%5Cbegin%7Barray%7D%7Bc%7D%20%5C%5C%20h_i%5E%7B%5Cell%7D%20%5C%5C%20%5C%5C%20p_i%5E%7B%5Cell%7D%20%5C%5C%20%5Cend%7Barray%7D%5Cright%5D%2C%5Cleft%5C%7B%5Cleft%5B%5Cbegin%7Barray%7D%7Bc%7D%20%5C%5C%20h_j%5E%7B%5Cell%7D%20%5C%5C%20%5C%5C%20p_j%5E%7B%5Cell%7D%20%5C%5C%20%5Cend%7Barray%7D%5Cright%5D%5Cright%5C%7D_%7Bj%20%5Cin%20%5Cmathcal%7BN%7D_i%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20h_i%5E%7B%5Cell%2B1%7D%2C%20h_i%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%2C%20%5C%5C%20%5Cend%7Bequation%7D%20%5C%5C%20%20%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A2%7D%20%5C%5C%20e_%7Bi%20j%7D%5E%7B%5Cell%2B1%7D%20%3Df_e%5Cleft(h_i%5E%7B%5Cell%7D%2C%20h_j%5E%7B%5Cell%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%2B1%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%20%5C%5C%20%5Cend%7Bequation%7D%20%5C%5C%20%20%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A3%7D%20%5C%5C%20%20%20%20%20p_i%5E%7B%5Cell%2B1%7D%20%20%3Df_p%5Cleft(p_i%5E%7B%5Cell%7D%2C%5Cleft%5C%7Bp_j%5E%7B%5Cell%7D%5Cright%5C%7D_%7Bj%20%5Cin%20%5Cmathcal%7BN%7D_i%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20p_i%5E%7B%5Cell%2B1%7D%2C%20p_i%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%20%5C%5C%20%5Cend%7Bequation%7D)](#_)
+
+![MPNN Equations](./images/MPNN%20equations.png)
 
 ### E(n) Equivariant GNN
 
@@ -87,30 +86,34 @@ which ultimately renders such architectures intractable for large graphs.
 
 ### Positional Encodings
 
-Positional encodings (PE) are a fundamental concept that significantly influences the effective-
-ness of many network architectures, including CNNs [Lecun et al., 1998 ], RNNs [Hopfield, 1982 ,
+Positional encodings (PE) are a fundamental concept that significantly influences the effectiveness of many network architectures, including CNNs [Lecun et al., 1998 ], RNNs [Hopfield, 1982 ,
 Hochreiter and Schmidhuber, 1997], and most recently, Transformers [Vaswani et al., 2017], by
-providing a means to infuse positional information into deep learning models. However, infer-
-ring nodes’ positions in any given graph is a non-trivial task due to the absence of a canon-
+providing a means to infuse positional information into deep learning models. However, inferring nodes’ positions in any given graph is a non-trivial task due to the absence of a canon-
 ical positioning method for capturing both local and global information. While GNNs have
 been shown to outperform traditional algorithms for node classification, subpar performance
-was demonstrated in [Hu et al., 2020 ] when compared to simple heuristics such as Adamic Adar
-[Adamic and Adar, 2003] on link prediction tasks [ Liben-Nowell and Kleinberg, 2003 ]. Recent work
+was demonstrated in [Hu et al., 2020] when compared to simple heuristics such as Adamic Adar
+[Adamic and Adar, 2003] on link prediction tasks [Liben-Nowell and Kleinberg, 2003]. Recent work
 [ Srinivasan and Ribeiro, 2019, Br ̈uel-Gabrielsson et al., 2022 , Wang et al., 2022] have (empirically)
-rendered the addition of PE in GNNs crucial in achieving state-of-the-art (SOTA) in graph predic-
-tion tasks. Several candidates for PE have been proposed, such as Index PE [Murphy et al., 2019 ],
-Laplacian Eigenvectors [Dwivedi et al., 2022 ] and learnable position-aware embeddings based on
+rendered the addition of PE in GNNs crucial in achieving state-of-the-art (SOTA) in graph prediction tasks. Several candidates for PE have been proposed, such as Index PE [Murphy et al., 2019],
+Laplacian Eigenvectors [Dwivedi et al., 2022] and learnable position-aware embeddings based on
 random anchor node sets [You et al., 2019]. Another relevant method which this study focuses on
-involves diffusion-based Random walks [ Bourgain, 1985 , Chung, 1997]. The encodings produced
+involves diffusion-based Random walks [Bourgain, 1985 , Chung, 1997]. The encodings produced
 with this method carry significant descriptive power when considering graph topology, as they can
-effectively capture the graph’s diffusion characteristics [ Topping et al., 2022]. We perform visualisations of Random Walk Positional Encodings in the following [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/qm9_rw_exploration.ipynb). Formally, the RW
+effectively capture the graph’s diffusion characteristics [Topping et al., 2022]. We perform visualisations of Random Walk Positional Encodings in the following [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/qm9_rw_exploration.ipynb). Formally, the RW
 matrix can be defined over k-steps as :
 
-[![\\ \begin{equation} \\     \mathbf{p}_i^{\text{RW}} = \left[\text{RW}_{ii}, \ \text{RW}^2_{ii}, \ ... \ \text{RW}^k_{ii}\right] \\ \end{equation}](https://latex.codecogs.com/svg.latex?%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%20%20%20%20%5Cmathbf%7Bp%7D_i%5E%7B%5Ctext%7BRW%7D%7D%20%3D%20%5Cleft%5B%5Ctext%7BRW%7D_%7Bii%7D%2C%20%5C%20%5Ctext%7BRW%7D%5E2_%7Bii%7D%2C%20%5C%20...%20%5C%20%5Ctext%7BRW%7D%5Ek_%7Bii%7D%5Cright%5D%20%5C%5C%20%5Cend%7Bequation%7D)](#_)
+![RW Equations](./images/PE-vector.png)
+
+To further examine the inner workings of Random Walk Positional Encodings (RWPE), we provide two samples from the QM9 dataset in
+the following Figures below, where the first graph has unique RWPE features, while the latter has partially
+unique features (75 % unique). The plots display a different colour for each unique encoding
+attributed by RWPE. After some contemplation, one can observe from Figure 1a and 1a, that nodes
+with the same attributed colour are isomorphic in the graph, i.e. for k ≥ 7, the nodes have the same
+k-step neighbourhood.
 
 ### Learnable Structural and Positional Encodings
 
-Learnable Structural and Positional Encodings (LSPE) [ Dwivedi et al., 2021 ] have been proposed as
+Learnable Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] have been proposed as
 an extension to traditional GNN architectures. LSPE combines structural and positional encodings
 to learn expressive representations that better capture both local and global graph information,
 resulting in more expressive node embeddings. The structural encoding component focuses on
@@ -124,7 +127,7 @@ positional properties. The combination of structural and positional encodings pr
 representation of the graph, manifested through more expressive node embeddings, leading to
 improved performance in node classification, link prediction, and graph generation tasks.
 
-[![\\ \begin{equation} \\ \label{eq:1} \\ h_i^{\ell+1} =f_h\left(\left[\begin{array}{c} \\ h_i^{\ell} \\ \\ p_i^{\ell} \\ \end{array}\right],\left\{\left[\begin{array}{c} \\ h_j^{\ell} \\ \\ p_j^{\ell} \\ \end{array}\right]\right\}_{j \in \mathcal{N}_i}, e_{i j}^{\ell}\right), h_i^{\ell+1}, h_i^{\ell} \in \mathbb{R}^d, \\ \end{equation} \\  \\ \begin{equation} \\ \label{eq:2} \\ e_{i j}^{\ell+1} =f_e\left(h_i^{\ell}, h_j^{\ell}, e_{i j}^{\ell}\right), e_{i j}^{\ell+1}, e_{i j}^{\ell} \in \mathbb{R}^d \\ \end{equation} \\  \\ \begin{equation} \\ \label{eq:3} \\     p_i^{\ell+1}  =f_p\left(p_i^{\ell},\left\{p_j^{\ell}\right\}_{j \in \mathcal{N}_i}, e_{i j}^{\ell}\right), p_i^{\ell+1}, p_i^{\ell} \in \mathbb{R}^d \\ \end{equation}](https://latex.codecogs.com/svg.latex?%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A1%7D%20%5C%5C%20h_i%5E%7B%5Cell%2B1%7D%20%3Df_h%5Cleft(%5Cleft%5B%5Cbegin%7Barray%7D%7Bc%7D%20%5C%5C%20h_i%5E%7B%5Cell%7D%20%5C%5C%20%5C%5C%20p_i%5E%7B%5Cell%7D%20%5C%5C%20%5Cend%7Barray%7D%5Cright%5D%2C%5Cleft%5C%7B%5Cleft%5B%5Cbegin%7Barray%7D%7Bc%7D%20%5C%5C%20h_j%5E%7B%5Cell%7D%20%5C%5C%20%5C%5C%20p_j%5E%7B%5Cell%7D%20%5C%5C%20%5Cend%7Barray%7D%5Cright%5D%5Cright%5C%7D_%7Bj%20%5Cin%20%5Cmathcal%7BN%7D_i%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20h_i%5E%7B%5Cell%2B1%7D%2C%20h_i%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%2C%20%5C%5C%20%5Cend%7Bequation%7D%20%5C%5C%20%20%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A2%7D%20%5C%5C%20e_%7Bi%20j%7D%5E%7B%5Cell%2B1%7D%20%3Df_e%5Cleft(h_i%5E%7B%5Cell%7D%2C%20h_j%5E%7B%5Cell%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%2B1%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%20%5C%5C%20%5Cend%7Bequation%7D%20%5C%5C%20%20%5C%5C%20%5Cbegin%7Bequation%7D%20%5C%5C%20%5Clabel%7Beq%3A3%7D%20%5C%5C%20%20%20%20%20p_i%5E%7B%5Cell%2B1%7D%20%20%3Df_p%5Cleft(p_i%5E%7B%5Cell%7D%2C%5Cleft%5C%7Bp_j%5E%7B%5Cell%7D%5Cright%5C%7D_%7Bj%20%5Cin%20%5Cmathcal%7BN%7D_i%7D%2C%20e_%7Bi%20j%7D%5E%7B%5Cell%7D%5Cright)%2C%20p_i%5E%7B%5Cell%2B1%7D%2C%20p_i%5E%7B%5Cell%7D%20%5Cin%20%5Cmathbb%7BR%7D%5Ed%20%5C%5C%20%5Cend%7Bequation%7D)](#_)
+![LSPE Equations](./images/LSPE-equations.png)
 
 ## Methodology
 
@@ -156,7 +159,7 @@ when adding LSPE with Geometry as only one scalar attribute is added to each MPN
 
 Two different MPNN architectures were examined in this study. The first one, which this study
 refers to as Standard MPNN, calculates the messages based on both receiving and sending nodes
-whereas the second architecture, the Isotropic MPNN [ Tailor et al., 2022], only uses sending nodes
+whereas the second architecture, the Isotropic MPNN [Tailor et al., 2022], only uses sending nodes
 to calculate messages, allowing us to test our method on less expressive models.
 In order to quantify the contribution of geometry in the LSPE framework, we run a set of experiments
 on 6 variants. These include the basic MPNN model, adding Geometry only (for which the Standard
@@ -171,8 +174,7 @@ in Section 2.2. The detailed formulas for each model can be found in Tables 1 an
 
 ## Experiments
 
-Data The QM9 dataset, first introduced by [ Ramakrishnan et al., 2014] and subsequently stud-
-ied by [ Gilmer et al., 2017b ] and [ Wu et al., 2018], comprises approximately 130,000 graphs, each
+Data The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
 consisting of around 18 nodes. In this dataset, the graphs represent molecules, with the nodes
 representing atoms and the undirected, typed edges representing various types of bonds between these atoms. The objective of analyzing this dataset is to predict 13 quantum chemical properties.
 Nevertheless, this study only focuses on inferring the Isotropic Polarizability α.
@@ -185,17 +187,17 @@ namely i) messages ii) aggregation and iii) node update operations. For the firs
 EGNN network (MPNN-Geom) is configured with 1, 4, and 7 hidden layers, while for the second
 experiment, we used 4 and 7 layers for all the models. Moreover, for this second experiment, we also
 tested a 10-layer Isotropic MPNN. Each network has 128 features per hidden layer and uses the
-SiLU activation function [ Elfwing et al., 2017] as a non-linearity, with the exception of networks
+SiLU activation function [Elfwing et al., 2017] as a non-linearity, with the exception of networks
 related to PEs, which use Tanh as an activation function. The predicted value is obtained by
 applying a sum-pooling operation followed by two layers of MLPs, which map the node embeddings
 h(l=L) to the output of the model. All models have been trained under the same configuration,
 with a batch size of 96, 1000 epochs, the Adam optimizer with a learning rate set at 0.0005 with
-a Cosine Annealing scheduler [ Loshchilov and Hutter, 2017 ] and a weight decay of 10−16. Further
+a Cosine Annealing scheduler [Loshchilov and Hutter, 2017] and a weight decay of 10−16. Further
 implementation details can be found in the repository’s1 implementation of the different models.
 
 ## Results and Analysis
 
-All of the results shown in this section can be generated by evaluating individually for each model in the [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/main.ipynb) provided.
+All of the results shown in this section can be generated by evaluating individually for each model in the [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/main.ipynb) provided, you can modify the number of layers and the specific model variants in this notebook.
 
 In this section, we will first examine how infusing the models with implicit topological information
 in the shape of Random Walk PEs (RWPE) affects their performance on the QM9 dataset in a
@@ -247,8 +249,7 @@ with Geometry.
 When analysing the results for the models using LSPE, they show that the normal MPNN model
 always results in an increased performance while the opposite happens for the Isotropic MPNN. We
 thus hypothesise that **the model is not complex enough to effectively use the learnt PEs.**
-For LSPE with Geometry, we again see a similar effect as previously mentioned, with MPNN-LSPE-
-Geom achieving consistently the best performance for 4 and 7 layers. For the Isotropic MPNN, we
+For LSPE with Geometry, we again see a similar effect as previously mentioned, with MPNN-LSPE-Geom achieving consistently the best performance for 4 and 7 layers. For the Isotropic MPNN, we
 experience a performance gain with respect to the base model, but infusing PEs (PE-Geom) still
 results in a better performance. It is worth mentioning that the performance gap between PE-Geom
 and LSPE-Geom becomes smaller for the Isotropic model as the number of layers increases, which supports our previous claim, that more complexity is needed to use the learnable encodings efficiently.
@@ -267,8 +268,7 @@ without geometry.
 
 ## Conclusion 
 
-This work examines how injecting topological information into the EGNN model affects its perfor-
-mance in a fully connected and non-fully connected setting. Through an extensive investigation,
+This work examines how injecting topological information into the EGNN model affects its performance in a fully connected and non-fully connected setting. Through an extensive investigation,
 we compared the original architecture with an enhanced version incorporating additional implicit
 topological information via Random Walk Positional Encodings. Our experiments revealed how,
 depending on the model’s size, using implicit topological information may be beneficial to the
@@ -325,8 +325,7 @@ Information Processing Systems, 34:2625–2640.
 Israel Journal of Mathematics, 52:46–52.
 <br /><br />
 
-[Bouritsas et al., 2022] Bouritsas, G., Frasca, F., Zafeiriou, S., and Bronstein, M. M. (2022). Improv-
-ing graph neural network expressivity via subgraph isomorphism counting. IEEE Transactions on
+[Bouritsas et al., 2022] Bouritsas, G., Frasca, F., Zafeiriou, S., and Bronstein, M. M. (2022). Improving graph neural network expressivity via subgraph isomorphism counting. IEEE Transactions on
 Pattern Analysis and Machine Intelligence, 45(1):657–668.
 <br /><br />
 
