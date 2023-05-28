@@ -41,11 +41,11 @@ $$\\begin{equation}
 \\end{equation}$$
 
 $$\\begin{equation}
-    e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
+    e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d,
 \\end{equation}$$
 
-where \(h_i^{\ell+1}\) is the hidden state update, $$\\begin{equation} e\_{i j}^{\\ell+1} \\end{equation}$$  the edge update.
-
+where $h_i^{\ell+1}\$ is the hidden state update, $$\\begin{equation} e\_{i j}^{\\ell+1} \\end{equation}$$  the edge update.
+$p\_i^{\\text{RW}}
 ### E(n) Equivariant GNN
 
 EGNNs [Satorras et al., 2021] extend MPNNs by relying on graph geometry to improve performance
