@@ -131,7 +131,7 @@ improved performance in node classification, link prediction, and graph generati
 
 ![LSPE Equations](./images/LSPE-equations.png)
 
-## Methodology
+## Novel Contribution
 
 Recognizing the significant role of node distances in capturing the graph’s topology within the
 original EGNN architecture and the promising results of the LSPE framework as mentioned in
