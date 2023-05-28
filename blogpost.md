@@ -57,8 +57,7 @@ which ultimately renders such architectures intractable for large graphs.
 
 Positional encodings (PE) are a fundamental concept that significantly influences the effectiveness of many network architectures, including CNNs [Lecun et al., 1998 ], RNNs [Hopfield, 1982 ,
 Hochreiter and Schmidhuber, 1997], and most recently, Transformers [Vaswani et al., 2017], by
-providing a means to infuse positional information into deep learning models. However, inferring nodes’ positions in any given graph is a non-trivial task due to the absence of a canon-
-ical positioning method for capturing both local and global information. While GNNs have
+providing a means to infuse positional information into deep learning models. However, inferring nodes’ positions in any given graph is a non-trivial task due to the absence of a canonical positioning method for capturing both local and global information. While GNNs have
 been shown to outperform traditional algorithms for node classification, subpar performance
 was demonstrated in [Hu et al., 2020] when compared to simple heuristics such as Adamic Adar
 [Adamic and Adar, 2003] on link prediction tasks [Liben-Nowell and Kleinberg, 2003]. Recent work
