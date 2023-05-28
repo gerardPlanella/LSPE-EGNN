@@ -3,20 +3,8 @@
 ## Project Description
 
 
-Graph Neural Networks (GNNs) have been shown to possess similar discriminatory power as the 1-dimensional Weisfeiler-Lehman (WL) 
-test in discerning non-isomorphic (sub-)graphs. However, the computational demands of fully connecting 
-all nodes in GNNs pose challenges. In this work, we propose a versatile approach that leverages
-geometry to enhance positional encodings within the framework of Learnable structural and Positional Encodings (LSPEs). 
-Our approach is founded on the Equivariant Message Passing Simplicial Network (EMPSN) architecture, 
-which integrates geometric and topological information on simplicial complexes. 
-Through extensive experimentation, we establish that the incorporation of topological 
-knowledge via positional encodings significantly augments the performance of the standard 
-EGNN model across both fully connected and non-fully connected scenarios, with the extent of 
-benefit depending on the complexity of the underlying model. Furthermore, our findings unveil a 
-compelling correlation between model intricacy and the influence of topological information, revealing 
-that less complex models stand to gain the most from such additional insights. Ultimately, our method exhibits 
-promising prospects when applied to graph datasets where achieving a fully connected environment proves 
-computationally impracticable, thus paving the way for potentially advantageous outcomes.
+Graph neural networks (GNNs) have emerged as the dominant learning architectures for graph data. Among them, Equivariant Graph Neural Networks (EGNNs) introduced a novel approach to incorporate geometric information, ensuring equivariance throughout the system. However, the EGNN architecture has two main limitations. Firstly, it under utilizes the topological information inherent in the graph structure, and secondly, achieving SOTA performance necessitates a fully connected graph, which may not always be feasible in certain applications. In addition, the Learnable structural and Positional Encodings (LSPE) framework proposes to decouple structural and positional representations to learn better these two essential properties by using implicit topological information. In this work, we investigate the extent to which structural encodings in geometric methods contribute in capturing topological information. Furthermore, inspired by Equivariant Message Passing Simplicial Network (EMPSN) architecture, which integrates geometric and topological information on simplicial complexes, we introduce an approach that leverages geometry to enhance positional encodings within the LSPE framework. We empirically show through our proposed method that conditioning the learnable PEs with the absolute distance between particles (for the QM9 dataset) can be beneficial to learn better representations, given that the model has sufficient complexity. Our method exhibits promising potential for graph datasets with limited connectivity, offering opportunities for advantageous outcomes by effectively handling situations where achieving a fully connected graph is not feasible.
+
 
 ---
 
