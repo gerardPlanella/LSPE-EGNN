@@ -136,8 +136,7 @@ following contributions:
 complexity, revealing the limitations of the LSPE framework for less complex models.
 
 Recognizing the significant role of node distances in capturing the graph’s topology within the
-original EGNN architecture and the promising results of the LSPE framework as mentioned in
-Subsection 2.4, we propose a method which combines these two techniques. By integrating the
+original EGNN architecture and the promising results of the LSPE framework as previously mentioned, we propose a method which combines these two techniques. By integrating the
 geometrical features of the graph (node distances in the case of QM9) with topological features
 given by PEs, we seek to achieve more expressive node attributes.
 
