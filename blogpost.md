@@ -197,11 +197,17 @@ including PEs, we used a Random Walk (RW) diffusion-based positional encoding sc
 in Section 2.2. The detailed formulas for each model can be found in Tables 1 and 2.
 
 <p align="center">
-    <img src="./images/table1.png" style="margin:0" alt>
+    <img src="./images/table-1.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 1.</em> Equations for message passing, aggregation and node update for MPNN, MPNN- Geom(EGNN), MPNN-PE, MPNN-PE-Geom (EGNN with PE) for both standard and isotropic MPNNs.
 </p>
 
 <p align="center">
-    <img src="./images/table2.png" style="margin:0" alt>
+    <img src="./images/table-2.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 2.</em> Equations for message passing, aggregation, and node update for MPNN-LSPE and MPNN-LSPE-Geom for both standard and isotropic MPNNs.
 </p>
 
 ## Experiments
@@ -264,6 +270,9 @@ graph becomes accessible in one hop.
 <p align="center">
     <img src="./images/table-3.png" style="margin:0" alt>
 </p>
+<p align="center">
+    <em>Table 3.</em> EGNN: (MPNN Geom vs MPNN Geom PE) Analysis of the effect of non-learnable PEs on the original QM9 data versus the fully connected QM9 data for different numbers of layers.
+</p>
 
 For the second experiment, we trained both model architectures and all of their variants on the
 QM9 dataset for 4 and 7 layers in a NFC setting. The results are shown in table 4. The MPNNs
@@ -300,7 +309,17 @@ without geometry.
 
 
 <p align="center">
-    <img src="./images/table-4-5.png" style="margin:0" alt>
+    <img src="./images/table-4.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 4.</em> Analysis of the effect of different variants of MPNN and MPNN-Isotropic architectures on Test MAE for 4 and 7 layers.
+</p>
+
+<p align="center">
+    <img src="./images/table-5.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 5.</em> Analysis of the effect of different variants of MPNN-Isotropic architectures on Test MAE for 10 layers.
 </p>
 
 ## Conclusion 
