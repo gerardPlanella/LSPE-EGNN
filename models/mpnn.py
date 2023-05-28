@@ -5,7 +5,15 @@ from torch_scatter import scatter_add
 from .utils import get_pe_attribute
 
 class MPNNLayer(nn.Module):
-    """Vanilla MPNN layer"""
+    """Standard version of the MPNN layer
+
+    Args:
+        num_hidden (int): Number of hidden units
+        reduced (bool): Whether to use the reduced version of the MPNN layer
+        include_dist (bool): Whether to include the distance between nodes as
+            an input to the message network
+        **kwargs: Additional keyword arguments
+    """
 
     def __init__(self, num_hidden, **kwargs):
         super().__init__()
@@ -29,9 +37,11 @@ class MPNNLayer(nn.Module):
         send, rec = edge_index
         state = x[send]
 
+        # Add the node features to the state if not using the reduced version
         if not self.reduced:
             state = torch.cat([state, x[rec]], dim=1)
 
+        # Add the distance between nodes to the state if required
         if self.include_dist:
             dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
             state = torch.cat([state, dist], dim=1)
@@ -40,8 +50,6 @@ class MPNNLayer(nn.Module):
         message = self.message_mlp(state)
 
         # Aggregate messages from neighbours by summing
-        # aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        # aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
         aggr = scatter_add(message, rec, dim=0)
 
         # Pass the new state through the update network alongside x
@@ -50,7 +58,17 @@ class MPNNLayer(nn.Module):
 
 
 class MPNNLSPELayer(nn.Module):
-    """MPNN layer augmented with LSPE"""
+    """MPNN layer augmented with LSPE
+
+    Args:
+        num_hidden (int): Number of hidden units
+        reduced (bool): Whether to use the reduced version of the MPNN layer
+        include_dist (bool): Whether to include the distance between nodes as
+            an input to the message network
+        update_with_pe (bool): Whether to update the node features with the
+            positional encoding
+        **kwargs: Additional keyword arguments
+    """
 
     def __init__(self, num_hidden, **kwargs):
         super().__init__()
@@ -86,10 +104,12 @@ class MPNNLSPELayer(nn.Module):
         state = torch.cat([x[send], pe[send]], dim=-1)
         pe_state = pe[send]
 
+        # Add the node features to the state if not using the reduced version
         if not self.reduced:
             state = torch.cat([state, torch.cat([x[rec], pe[rec]], dim=-1)], dim=1)
             pe_state = torch.cat([pe_state, pe[rec]], dim=1)
 
+        # Add the distance between nodes to the state if required
         if self.include_dist:
             dist = torch.linalg.norm(pos[send] - pos[rec], dim=1).unsqueeze(1)
             state = torch.cat([state, dist], dim=1)
@@ -100,8 +120,6 @@ class MPNNLSPELayer(nn.Module):
         pos = self.pos_mlp(pe_state)
 
         # Aggregate state messages from neighbours by summing
-        # aggr = torch.zeros((x.size(0), message.size(1)), device=x.device)
-        # aggr = aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), message.size(1)), message)
         aggr = scatter_add(message, rec, dim=0)
 
         # Pass the new state through the update network alongside x
@@ -109,8 +127,6 @@ class MPNNLSPELayer(nn.Module):
         update = self.update_mlp(torch.cat(update_state, dim=1))
 
         # Aggregate pos from neighbourhood by summing
-        # pos_aggr = torch.zeros((x.size(0), pos.size(1)), device=x.device)
-        # pos_aggr = pos_aggr.scatter_add(0, rec.unsqueeze(1).expand(send.size(0), pos.size(1)), pos)
         pos_aggr = scatter_add(pos, rec, dim=0)
 
         # Pass the new pos state through the update network alongside pe
@@ -119,6 +135,18 @@ class MPNNLSPELayer(nn.Module):
 
 
 class MPNN(nn.Module):
+    """MPNN model
+
+    Args:
+        in_channels (int): Number of input channels
+        hidden_channels (int): Number of hidden units
+        num_layers (int): Number of layers
+        out_channels (int): Number of output channels
+        pe (str): Type of positional encoding to use
+        pe_dim (int): Dimension of the positional encoding
+        lspe (bool): Whether to use LSPE
+        **kwargs: Additional keyword arguments
+    """
 
     def __init__(self, in_channels, hidden_channels, num_layers, out_channels,
                  pe='rw', pe_dim=24, lspe=False, **kwargs):
@@ -159,23 +187,29 @@ class MPNN(nn.Module):
     def forward(self, data):
         x, pos, edge_index, batch = data.x, data.pos, data.edge_index, data.batch
 
+        # Add the positional encoding to the node features
         if self.pe != 'nope':
+            # Get the positional encoding attribute
             pe = getattr(data, get_pe_attribute(self.pe))
             x = torch.cat([x, pe], dim=-1)
 
             # In the case of LSPE, pass PE through embedder
             pe = self.embed_pe(pe) if self.lspe else pe
 
+        # Pass the node features through the embedder
         x = self.embed(x)
 
         for layer in self.layers:
             if self.lspe:
+                # In the case of LSPE, pass PE through embedder
                 out, pe_out = layer(x, pos, edge_index, pe)
                 x += out
                 pe += pe_out
             else:
+                # Otherwise, just pass the node features
                 x += layer(x, pos, edge_index)
 
+        # Readout
         x = self.pre_readout(x)
         x = global_add_pool(x, batch)
         out = self.readout(x)

@@ -3,6 +3,8 @@ import functools
 
 
 def get_pe_attribute(pe_name):
+    """Returns the name of the attribute that stores the positional encoding
+    for the given PE method."""
     if pe_name == 'rw':
         return 'random_walk_pe'
     elif pe_name == 'lap':
@@ -24,6 +26,3 @@ def deprecated(func):
         return func(*args, **kwargs)
 
     return new_func
-
-def scatter_add():
-    """Adaptation of scatter_add from torch_scatter"""

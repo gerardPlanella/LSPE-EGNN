@@ -4,6 +4,19 @@ import torch
 from tqdm import tqdm
 
 def evaluate(model, loader, criterion, device, mean, mad):
+    """Evaluate the model on the validation/test set.
+
+    Args:
+        model (torch.nn.Module): The model to evaluate.
+        loader (torch.utils.data.DataLoader): The validation set loader.
+        criterion (torch.nn.Module): The loss function.
+        device (torch.device): The device to use.
+        mean (float): The mean of the training set.
+        mad (float): The mean absolute deviation of the training set.
+
+    Returns:
+        float: The mean absolute error on the validation set.
+    """
     mae = 0.0
     model.eval()
     for _, batch in enumerate(tqdm(loader)):
@@ -18,6 +31,20 @@ def evaluate(model, loader, criterion, device, mean, mad):
 def train(model, loader, criterion,
           optimizer, device,
           mean, mad):
+    """Train the model on the training set.
+
+    Args:
+        model (torch.nn.Module): The model to train.
+        loader (torch.utils.data.DataLoader): The training set loader.
+        criterion (torch.nn.Module): The loss function.
+        optimizer (torch.optim.Optimizer): The optimizer.
+        device (torch.device): The device to use.
+        mean (float): The mean of the training set.
+        mad (float): The mean absolute deviation of the training set.
+
+    Returns:
+        float: The mean absolute error on the training set.
+    """
     mae = 0.0
     model.train()
     for _, batch in enumerate(tqdm(loader)):

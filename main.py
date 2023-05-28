@@ -23,6 +23,7 @@ import wandb
 script_dir = os.path.dirname(__file__)
 
 def setup_gpu():
+    """Function for setting up the GPU."""
     if torch.cuda.is_available():
         device = torch.device('cuda')
         print("CUDA available. Setting device to CUDA:", device)
@@ -47,6 +48,7 @@ def set_seed(seed):
 
 
 def parse_options():
+    """Function for parsing command line arguments."""
     parser = argparse.ArgumentParser("Model runner.")
 
     # Config matters
@@ -104,6 +106,7 @@ def parse_options():
 
     args = parser.parse_args()
 
+    # If config file is specified, parse it and override the command line arguments
     if args.config is not None:
         config_dir_path = os.path.join(script_dir, 'config')
         with open(os.path.join(config_dir_path, args.config), 'r') as cf:
@@ -111,6 +114,7 @@ def parse_options():
             print(f'Successfully parsed the arguments from config/{args.config}')
         args = parser.parse_args()
 
+    # If evaluate is specified, override the command line arguments
     if args.write_config_to is not None:
         # If no config directory, make it
         config_dir_path = os.path.join(script_dir, 'config')
@@ -126,12 +130,14 @@ def parse_options():
             json.dump(json_args, cf, indent=4)
             print(f'Successfully wrote the config to config/{args.write_config_to}')
 
+    # Delete the config and write_config_to arguments to avoid confusion
     del args.config
     del args.write_config_to
     return args
 
 
 def split_qm9(dataset):
+    """Splits the QM9 dataset into train, val, and test sets."""
     n_train, n_test = 100000, 110000
     train_dataset = dataset[:n_train]
     test_dataset = dataset[n_train:n_test]
@@ -140,6 +146,7 @@ def split_qm9(dataset):
 
 
 def get_pe(pe_name, pe_dim):
+    """Gets the corresponding PE method."""
     if 'rw' in pe_name.lower():
         return AddRandomWalkPE(pe_dim)
     elif 'lap' in pe_name.lower():
@@ -167,6 +174,7 @@ def get_dataset(dataset_name, pe_name, pe_dim):
 
 
 def get_model(model_name):
+    """Gets the corresponding model according to the specified run args."""
     if model_name == 'egnn':
         from models.egnn import EGNN
         return EGNN
@@ -177,6 +185,7 @@ def get_model(model_name):
         raise NotImplementedError(f'Model name {model_name} not recognized.')
 
 def main(args):
+    """Main function."""
     # Display run arguments
     pprint(args)
     print()
@@ -217,6 +226,8 @@ def main(args):
                f'_{"yes-reduced" if args.reduced else "no-reduced"}' \
                f'_{"yes-update_with_pe" if args.update_with_pe else "no-update_with_pe"}' \
                f'_epochs-{args.epochs}_num_layers-{args.num_layers}'
+
+    # Initialize the wandb run
     wandb.init(project="dl2-modularized-exp", entity="dl2-gnn-lspe", config=config, reinit=True,
                name=run_name)
     wandb.watch(model)
@@ -238,6 +249,7 @@ def main(args):
     # Skip training if the evaluate parameter is set.
     skip_train = args.evaluate is not None
 
+    # If evaluate is set, load the model and evaluate it.
     if not skip_train:
         print('Beginning training...')
         try:
@@ -269,7 +281,10 @@ def main(args):
                                      f'_lr-{args.learning_rate}' \
                                      f'_seed-{args.seed}.pt'
 
+                        # Save the model to the saved_models directory
                         saved_models_dir = os.path.join(script_dir, 'saved_models')
+
+                        # If the directory does not exist, create it
                         if not os.path.exists(saved_models_dir):
                             os.makedirs(saved_models_dir)
                         torch.save(ckpt, os.path.join(saved_models_dir, model_path))
@@ -280,19 +295,22 @@ def main(args):
                     # Update the postfix of tqdm with every iteration
                     t.set_postfix(time=time.time() - start, lr=optimizer.param_groups[0]['lr'],
                                   train_loss=epoch_train_mae, val_loss=epoch_val_mae)
-
         except KeyboardInterrupt:
+            # Training can be safely interrupted with Ctrl+C
             print('Exiting training early because of keyboard interrupt.')
 
     saved_models_dir = os.path.join(script_dir, 'saved_models')
     if not skip_train:
+        # If the training is skipped, load the model from the saved_models directory
         print('Loading best model...')
     else:
+        # Otherwise, load the model from training from the saved_models directory
         model_path = os.path.join(saved_models_dir, args.evaluate)
         if not os.path.exists(model_path):
             raise TypeError(f'Model path not recognized: {model_path}')
         print(f'Loading model with weights stored at {model_path}...')
 
+    # Load the model
     ckpt = torch.load(os.path.join(saved_models_dir, model_path), map_location=device)
     model.load_state_dict(ckpt["state_dict"])
 
