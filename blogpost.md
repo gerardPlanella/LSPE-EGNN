@@ -168,17 +168,22 @@ To further enhance the expressive power of GNNs, this research project takes ins
 Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
 novel approach that combines geometric and topological information on simplicial complexes. Our
 goal is to develop a generic method that also combines geometric and topological information by
-improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. We highlight the
-following contributions:
+improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. Some of the higlighted contribution of this project are the following:
 
-- We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs.
+<!-- - We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs. -->
 
-- We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information.
+<!-- - We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information. -->
 
-Recognizing the significant role of node distances in capturing the graph’s topology within the
+- By providing PE to geometric methods, we empirically find that topological information through structural encodings improves geometric methods in shallow models, while this effect diminishes as the models become deeper.
+- We introduce a novel approach to incorporate geometric information to structural methods based on LSPE, which results in better learnt representations, given that the model has sufficient complexity.
+
+<!-- Recognizing the significant role of node distances in capturing the graph’s topology within the
 original EGNN architecture and the promising results of the LSPE framework as previously mentioned, we propose a method which combines these two techniques. By integrating the
 geometrical features of the graph (node distances in the case of QM9) with topological features
 given by PEs, we seek to achieve more expressive node attributes.
+ -->
+
+<!-- Firstly, we empirically find that by providing PE to EGNN, topological information through structural encodings improve geometric methods in shallow models and its effect diminishes as the model becomes more complex, hinting that EGNN learns topology through geometry. Secondly, the results of our proposed method indicate that conditioning the learnable PEs with the distance can be beneficial to learn better representations, given that the model has sufficient complexity.  -->
 
 ### GeTo-MPNN
 
