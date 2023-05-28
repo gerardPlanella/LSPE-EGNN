@@ -1,4 +1,4 @@
-# GeTo-LSPE: Geometry and Topology through Learnable Structural and Positional Encodings
+# ToGePi: Topology and Geometry informed Positional Information
 
 You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/blob/main/report.pdf).
 
@@ -189,7 +189,7 @@ given by PEs, we seek to achieve more expressive node attributes.
 
 <!-- Firstly, we empirically find that by providing PE to EGNN, topological information through structural encodings improve geometric methods in shallow models and its effect diminishes as the model becomes more complex, hinting that EGNN learns topology through geometry. Secondly, the results of our proposed method indicate that conditioning the learnable PEs with the distance can be beneficial to learn better representations, given that the model has sufficient complexity.  -->
 
-### GeTo-MPNN
+### Topology and Geometry informed LSPE
 
 EGNNs have achieved remarkable success by using the underlying
 geometry of the graph space to their advantage. However, it is important to note that the
