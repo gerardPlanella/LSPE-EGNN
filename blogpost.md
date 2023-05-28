@@ -150,50 +150,9 @@ goal is to develop a generic method that also combines geometric and topological
 improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. We highlight the
 following contributions:
 
-
 - We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs.
 
 - We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information.
-
-
-## Novel Contribution
-
-Recent research has been dedicated to enhancing the discriminative capabilities of GNNs, pushing
-past the constraints imposed by the 1-WL test. One solution to this issue involves providing
-inductive biases to the GNNs in the form of the data’s geometric information [Satorras et al., 2021,
-Brandstetter et al., 2021]. While incorporating the distance norm improves the model’s performance,
-it still suffers from limitations in expressivity by not being able to learn explicit higher-dimensional
-features present in the graph. A different line of research focuses on providing this information through
-topology by integrating Positional Encodings (PE) such as Random Walk-based [Bourgain, 1985,
-Chung, 1997] or Laplacian Eigenvector-based Encodings [Dwivedi et al., 2022]. These techniques
-aim to capture more global information and provide a richer representation of the graph beyond
-immediate neighbourhood interactions. Another more recent approach involves using Learnable
-Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] to decouple the structural (node
-features) and positional (node’s position within the graph) representations within GNNs, allowing
-them to be learned independently and leading to an increased expressivity and performance.
-
-To further enhance the expressive power of GNNs, this research project takes inspiration from the
-Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
-novel approach that combines geometric and topological information on simplicial complexes. Our
-goal is to develop a generic method that also combines geometric and topological information by
-improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. We highlight the
-following contributions:
-
-
-- We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs.
-
-- We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information.
-
-- Injecting topological information through PEs significantly improves performance in non-fully connected settings.
-
-- We find that topological information does not necessarily enhance the EGNN model in a fully-connected setting, suggesting that the model learns topology through geometry.
-
-- By adapting the LSPE framework to include Geometry, we create a generic method to incorporate both geometric and topological information.
-
-- We improve the performance of the standard EGNN model in non-fully connected scenarios.
-
-- Our method demonstrates its applicability to different architectures with sufficient model
-complexity, revealing the limitations of the LSPE framework for less complex models.
 
 Recognizing the significant role of node distances in capturing the graph’s topology within the
 original EGNN architecture and the promising results of the LSPE framework as previously mentioned, we propose a method which combines these two techniques. By integrating the
