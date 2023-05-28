@@ -207,7 +207,7 @@ concatenation to the message network for both the node message and the PE messag
 seen in Table 1. One benefit of this method is that parameter count does not drastically increase
 when adding LSPE with Geometry as only one scalar attribute is added to each MPNN layer.
 
-### MPNN Layers
+### MPNN Variants
 
 Two different MPNN architectures were examined in this study. The first one, which this study
 refers to as Standard MPNN, calculates the messages based on both receiving and sending nodes
