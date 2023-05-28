@@ -129,6 +129,24 @@ $$\\begin{equation}
 
 As we observe in the above equations, it becomes apparent that the only deviations from the original MPNN equations are the addition of a positional representation update as seen in the last equation above, and the concatenation of these trainable PEs with the node structural features as seen in the first equation above.
 
+### Topological Approaches
+
+No explicit topological properties have been used in all the aforementioned techniques, where 
+relational structure about the system in a higher dimensional space could be encoded. The Graph
+Substructure Network (GSN) [ Bouritsas et al., 2022] is considered to be one of the earlier methods
+that incorporated topology into its architecture, which laid the foundation for many subsequent
+research papers on topological deep learning [Papillon et al., 2023 ]. GSN enhanced the message-
+passing scheme with structural features extracted by (sub-)graph isomorphism. Furthermore, a
+novel message-passing procedure was introduced [ Bodnar et al., 2021] that focuses on the ”lifting”
+map of induced cycles within a graph. This enables the network to distinguish between rings
+within atoms on molecular datasets more easily, increasing its expressivity beyond that of the WL
+test. Finally, E(n) equivariant Message Passing Simplicial Networks [ Eijkelboom et al., 2023] have
+combined geometric and topological graph approaches in their architecture. They re-formulated
+the original EGNN [Satorras et al., 2021] to enable learning of features on simplicial complexes.
+The approach involves lifting the map and including information about the relative positions of
+communicating simplices in the message-passing formulation, demonstrating the potential to obtain
+SOTA for approaches that combine topology and geometry.
+
 
 ## Novel Contribution
 
