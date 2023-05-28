@@ -1,6 +1,20 @@
 ## Project Description
 
-todo (abstract of our paper)
+
+Graph Neural Networks (GNNs) have been shown to possess similar discriminatory power as the 1-dimensional Weisfeiler-Lehman (WL) 
+test in discerning non-isomorphic (sub-)graphs. However, the computational demands of fully connecting 
+all nodes in GNNs pose challenges. In this work, we propose a versatile approach that leverages
+geometry to enhance positional encodings within the framework of Learnable structural and Positional Encodings (LSPEs). 
+Our approach is founded on the Equivariant Message Passing Simplicial Network (EMPSN) architecture, 
+which integrates geometric and topological information on simplicial complexes. 
+Through extensive experimentation, we establish that the incorporation of topological 
+knowledge via positional encodings significantly augments the performance of the standard 
+EGNN model across both fully connected and non-fully connected scenarios, with the extent of 
+benefit depending on the complexity of the underlying model. Furthermore, our findings unveil a 
+compelling correlation between model intricacy and the influence of topological information, revealing 
+that less complex models stand to gain the most from such additional insights. Ultimately, our method exhibits 
+promising prospects when applied to graph datasets where achieving a fully connected environment proves 
+computationally impracticable, thus paving the way for potentially advantageous outcomes.
 
 ---
 
