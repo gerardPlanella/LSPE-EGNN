@@ -125,6 +125,8 @@ $$\\begin{equation}
     p\_i^{\\ell+1}  =f\_p\\left(p\_i^{\\ell}, \\ \\left\\{p\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\  p\_i^{\\ell+1}, \\ p\_i^{\\ell} \\in \\mathbb{R}^d
 \\end{equation}$$
 
+As we observe in the above equations, it becomes apparent that the only deviations from the original MPNN equations are the addition of a positional representation update as seen in the last equation above, and the concatenation of these trainable PEs with the node structural features as seen in the first equation above.
+
 
 ## Novel Contribution
 
