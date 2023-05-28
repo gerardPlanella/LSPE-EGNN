@@ -168,7 +168,7 @@ To further enhance the expressive power of GNNs, this research project takes ins
 Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
 novel approach that combines geometric and topological information on simplicial complexes. Our
 goal is to develop a generic method that also combines geometric and topological information by
-improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. Some of the higlighted contribution of this project are the following:
+improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. Some of the higlighted contributions of this project are the following:
 
 <!-- - We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs. -->
 
