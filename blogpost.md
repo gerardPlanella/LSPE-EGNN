@@ -33,6 +33,7 @@ immediate neighbourhood interactions. Another more recent approach involves usin
 Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] to decouple the structural (node
 features) and positional (node’s position within the graph) representations within GNNs, allowing
 them to be learned independently and leading to an increased expressivity and performance.
+
 To further enhance the expressive power of GNNs, this research project takes inspiration from the
 Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
 novel approach that combines geometric and topological information on simplicial complexes. Our
