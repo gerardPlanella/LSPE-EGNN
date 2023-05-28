@@ -162,7 +162,7 @@ $$\\begin{equation}
     p\_i^{\\ell+1}  =f\_p\\left(p\_i^{\\ell}, \\ \\left\\{p\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\  p\_i^{\\ell+1}, \\ p\_i^{\\ell} \\in \\mathbb{R}^d
 \\end{equation}$$
 
-## Methodology
+## Novel Contribution
 
 Recognizing the significant role of node distances in capturing the graph’s topology within the
 original EGNN architecture and the promising results of the LSPE framework as mentioned in
