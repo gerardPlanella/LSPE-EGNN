@@ -189,7 +189,7 @@ to calculate messages, allowing us to test our method on less expressive models.
 In order to quantify the contribution of geometry in the LSPE framework, we run a set of experiments
 on 6 variants. These include the basic MPNN model, adding Geometry only (for which the Standard
 MPNN with Geometry resembles the EGNN), PE only, PE and Geometry, LSPE and LSPE with
-Geometry. The last one being our proposal described in 3.1. For all the aforementioned models
+Geometry. The last one being our proposal described in Related Works. For all the aforementioned models
 including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme.
 The detailed formulas for each model can be found in Tables 1 and 2.
 
