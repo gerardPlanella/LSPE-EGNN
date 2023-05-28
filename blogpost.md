@@ -228,7 +228,7 @@ applying a sum-pooling operation followed by two layers of MLPs, which map the n
 $h^{l=L}$ to the output of the model. All models have been trained under the same configuration,
 with a batch size of 96, 1000 epochs, the Adam optimizer with a learning rate set at 0.0005 with
 a Cosine Annealing scheduler [Loshchilov and Hutter, 2017] and a weight decay of 10−16. Further
-implementation details can be found in the repository’s1 implementation of the different models.
+implementation details can be found in the repository’s implementation of the different models.
 
 ## Results and Analysis
 
