@@ -1,4 +1,4 @@
-# GE-LSPE: Geometrically Enhanced Learnable Structural and Positional Encodings
+# GeTo-LSPE: Geometry and Topology through Learnable Structural and Positional Encodings
 
 You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/article.pdf).
 
