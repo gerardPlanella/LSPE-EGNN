@@ -1,6 +1,6 @@
 # GeTo-LSPE: Geometry and Topology through Learnable Structural and Positional Encodings
 
-You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/report.pdf).
+You can alternately read our [Article version of this blogpost](https://github.com/gerardPlanella/LSPE-EGNN/blob/main/report.pdf).
 
 ## TL;DR
 
