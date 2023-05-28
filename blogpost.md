@@ -98,7 +98,7 @@ to learn expressive representations that better capture both local and global gr
 resulting in more expressive node embeddings. The structural encoding component focuses on
 connectivity patterns and neighbourhood information, while the positional encoding component
 provides topological information into the node representations.
-Incorporating LSPE into GNNs offers several benefits. It enhances the GNN’s capability to
+Incorporating LSPE into GNNs enhances the GNN’s capability to
 better capture both local and global graph characteristics, enabling better handling of complex
 graph structures. The learnable nature of the encodings allows the model to adapt and optimize
 representations for specific tasks, making it suitable for diverse graphs with varying structural and
