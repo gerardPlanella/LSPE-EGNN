@@ -352,8 +352,7 @@ investigated is whether we can use less complex layers to learn the same PEs by 
 This becomes particularly relevant as we observe the enhanced performance with increased layers.
 Moreover, our present method of conditioning, achieved exclusively through concatenation, could be
 extended to alternatives that could potentially offer more efficient or expressive results. Additionally,
-our methodology presents promising potential for application on datasets where topological informa-
-tion is valuable but it is computationally prohibitive to connect all nodes. Through the utilization
+our methodology presents promising potential for application on datasets where topological information is valuable but it is computationally prohibitive to connect all nodes. Through the utilization
 of our approach, one could potentially achieve an equilibrium between computational feasibility and
 the use of topological information. Moreover, while the EGNN paper[Satorras et al., 2021] tests the
 model in the QM9 dataset with the nodes’ coordinates fixed, one could evaluate the same framework
