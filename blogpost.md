@@ -161,13 +161,13 @@ given by PEs, we seek to achieve more expressive node attributes.
 
 ### GeTo-MPNN
 
-As mentioned in Section 2, EGNNs have achieved remarkable success by using the underlying
+EGNNs have achieved remarkable success by using the underlying
 geometry of the graph space to their advantage. However, it is important to note that the
 computational cost associated with fully connected graphs can limit the feasibility of this approach.
 As the dimensionality of the graph structures increases (e.g. cycles), the number of layers required
 to learn such higher-dimensional structures scales exponentially. For that reason, we first aim to
 explore the benefits of incorporating implicit topology in the EGNN framework. This is performed
-by using a random walk encoding (k = 24), explained in Section 2.2, by embedding the hidden
+by using a random walk encoding (k = 24), by embedding the hidden
 features of a node together with its positional encoding to a higher dimensional space through
 concatenation.
 Our method proposes to combine the LSPE method while also making use of the geometrical
@@ -187,8 +187,8 @@ In order to quantify the contribution of geometry in the LSPE framework, we run 
 on 6 variants. These include the basic MPNN model, adding Geometry only (for which the Standard
 MPNN with Geometry resembles the EGNN), PE only, PE and Geometry, LSPE and LSPE with
 Geometry. The last one being our proposal described in 3.1. For all the aforementioned models
-including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme as described
-in Section 2.2. The detailed formulas for each model can be found in Tables 1 and 2.
+including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme.
+The detailed formulas for each model can be found in Tables 1 and 2.
 
 <p align="center">
     <img src="./images/table-1.png" style="margin:0" alt>
@@ -213,7 +213,7 @@ Nevertheless, this study only focuses on inferring the Isotropic Polarizability 
 
 **Implementation Details** Our experimental setting is comprised of two main sets of experiments,
 focusing on the architectures that are Standard MPNNs and Isotropic MPNNs. For each architecture,
-we tested 6 different variants that are mentioned in Section 3.2. All model equations are shown in
+we tested 6 different variants that are mentioned in our contributions Section. All model equations are shown in
 Tables 1 and 2. The structure of the table aims to describe the three following MPNN components,
 namely i) messages ii) aggregation and iii) node update operations. For the first experiment, our
 EGNN network (MPNN-Geom) is configured with 1, 4, and 7 hidden layers, while for the second
@@ -270,7 +270,7 @@ graph becomes accessible in one hop.
 
 For the second experiment, we trained both model architectures and all of their variants on the
 QM9 dataset for 4 and 7 layers in a NFC setting. The results are shown in table 4. The MPNNs
-introduced in Section 3.1 were used for these experiments. When analysing the effect of adding
+introduced in our contributions section were used for these experiments. When analysing the effect of adding
 PEs, the performance for both Standard and Isotropic MPNN models increases, while for 7 layers
 the performance gained from using PEs is lessened. This can be related to the results from the
 first experiment, where a trade-off between model complexity and the contribution of topological
