@@ -1,6 +1,6 @@
 {
     "model": "mpnn",
-    "dataset": "qm9",
+    "dataset": "qm9_fc",
     "pe": "nope",
     "pe_dim": 24,
     "lspe": false,
