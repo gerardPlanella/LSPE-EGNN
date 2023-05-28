@@ -44,7 +44,7 @@ $$\\begin{equation}
     e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
 \\end{equation}$$
 
-where h\_i^{\\ell+1} is the hidden state update, e\_{i j}^{\\ell+1} the edge update.
+where $$\\begin{equation} h\_i^{\\ell+1} \\end{equation}$$ is the hidden state update, $$\\begin{equation} e\_{i j}^{\\ell+1} \\end{equation}$$  the edge update.
 
 ### E(n) Equivariant GNN
 
