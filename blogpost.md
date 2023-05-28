@@ -36,8 +36,13 @@ graph generation. Several notable MPNN variants include Graph Convolutional Netw
 [ Hamilton et al., 2017] and Graph Isomorphism Networks (GIN) [Xu et al., 2018], each offering
 unique strategies for message passing and aggregation.
 
+$$\\begin{equation}
+    h\_i^{\\ell+1} =f\_h\\left(h\_i^{\\ell},\\left\\{h\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\ h\_i^{\\ell+1}, \\ h\_i^{\ell} \\in \\mathbb{R}^d, 
+\\end{equation}$$
 
-![MPNN Equations](./images/MPNN%20equations.png)
+$$\\begin{equation}
+    e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
 
 ### E(n) Equivariant GNN
 
@@ -64,9 +69,13 @@ random anchor node sets [You et al., 2019]. Another relevant method which this s
 involves diffusion-based Random walks [Bourgain, 1985 , Chung, 1997]. The encodings produced
 with this method carry significant descriptive power when considering graph topology, as they can
 effectively capture the graph’s diffusion characteristics [Topping et al., 2022]. We perform visualisations of Random Walk Positional Encodings in the following [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/qm9_rw_exploration.ipynb). Formally, the RW
-matrix can be defined over k-steps as :
+matrix can be defined over $k$-steps as:
 
-![RW Equations](./images/PE-vector.png)
+$$\\begin{equation}
+    p\_i^{\\text{RW}} = \\left[\\text{RW}\_{ii}, \\ \\text{RW}^2\_{ii}, \\ ... \\ \\text{RW}^k\_{ii}\\right]
+\\end{equation}$$
+
+where $p\_i^{\\text{RW}} \\in \\mathbb{R}^k$ is initial PE of node $i$, and $\\text{RW} = AD^{-1}$, given the adjacency matrix $A$ and the degree matrix $D$. Moreover, the intuition behind $RW\_{ii}^{k}$ can be interpreted as the probability of starting and ending a $k$-hop random walk on node $i$. 
 
 To further examine the inner workings of Random Walk Positional Encodings (RWPE), we provide two samples from the QM9 dataset in
 the following Figures below, where the first graph has unique RWPE features, while the latter has partially
@@ -75,7 +84,12 @@ attributed by RWPE. After some contemplation, one can observe from Figure 1a and
 with the same attributed colour are isomorphic in the graph, i.e. for k ≥ 7, the nodes have the same
 k-step neighbourhood.
 
-![RWPE](./images/molecules-appendix.png)
+<p align="center">
+    <img src="./images/molecules.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Figure 1.</em> Sample molecule graphs from the QM9 dataset, alongside the visualization of the corresponding molecule. The corresponding graph are <strong>8150</strong> (left) and <strong>1755</strong> (right), the number of nodes in the graphs and the number of unique RWPEs are labelled against the figures.
+</p>
 
 ### Learnable Structural and Positional Encodings
 
@@ -93,7 +107,53 @@ positional properties. The combination of structural and positional encodings pr
 representation of the graph, manifested through more expressive node embeddings, leading to
 improved performance in node classification, link prediction, and graph generation tasks.
 
-![LSPE Equations](./images/LSPE-equations.png)
+
+$$\\begin{equation}
+  h\_i^{\\ell+1} =f\_h\\left(\\left[\\begin{array}{c}
+  h\_i^{\\ell} \\\\
+  p\_i^{\\ell}
+  \\end{array}\\right], \\ \\left\\{\\left[\\begin{array}{c}
+  h\_j^{\\ell} \\\\
+  p\_j^{\\ell}
+  \\end{array}\\right]\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\ h\_i^{\\ell+1}, \\  h\_i^{\\ell} \\in \\mathbb{R}^d,
+\\end{equation}$$
+
+$$\\begin{equation}
+e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
+
+$$\\begin{equation}
+    p\_i^{\\ell+1}  =f\_p\\left(p\_i^{\\ell}, \\ \\left\\{p\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\  p\_i^{\\ell+1}, \\ p\_i^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
+
+
+## Novel Contribution
+
+Recent research has been dedicated to enhancing the discriminative capabilities of GNNs, pushing
+past the constraints imposed by the 1-WL test. One solution to this issue involves providing
+inductive biases to the GNNs in the form of the data’s geometric information [Satorras et al., 2021,
+Brandstetter et al., 2021]. While incorporating the distance norm improves the model’s performance,
+it still suffers from limitations in expressivity by not being able to learn explicit higher-dimensional
+features present in the graph. A different line of research focuses on providing this information through
+topology by integrating Positional Encodings (PE) such as Random Walk-based [Bourgain, 1985,
+Chung, 1997] or Laplacian Eigenvector-based Encodings [Dwivedi et al., 2022]. These techniques
+aim to capture more global information and provide a richer representation of the graph beyond
+immediate neighbourhood interactions. Another more recent approach involves using Learnable
+Structural and Positional Encodings (LSPE) [Dwivedi et al., 2021] to decouple the structural (node
+features) and positional (node’s position within the graph) representations within GNNs, allowing
+them to be learned independently and leading to an increased expressivity and performance.
+
+To further enhance the expressive power of GNNs, this research project takes inspiration from the
+Equivariant Message Passing Simplicial Network (EMPSN) architecture [Eijkelboom et al., 2023], a
+novel approach that combines geometric and topological information on simplicial complexes. Our
+goal is to develop a generic method that also combines geometric and topological information by
+improving upon the established LSPE framework. By combining these distinct approaches, we seek to leverage the complementary nature of geometric and topological information in capturing complex graph relationships and enhancing the discriminative capabilities of GNN models. We highlight the
+following contributions:
+
+
+- We demonstrate that smaller, less complex models experience larger performance gains when utilizing PEs.
+
+- We discover a relationship between model complexity and the impact of topological information, where less complex models benefit the most from this additional information.
 
 
 ## Novel Contribution
@@ -171,13 +231,23 @@ Geometry. The last one being our proposal described in 3.1. For all the aforemen
 including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme as described
 in Section 2.2. The detailed formulas for each model can be found in Tables 1 and 2.
 
-![Table 1](./images/table1.png)
+<p align="center">
+    <img src="./images/table-1.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 1.</em> Equations for message passing, aggregation and node update for MPNN, MPNN- Geom(EGNN), MPNN-PE, MPNN-PE-Geom (EGNN with PE) for both standard and isotropic MPNNs.
+</p>
 
-![Table 2](./images/table2.png)
+<p align="center">
+    <img src="./images/table-2.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 2.</em> Equations for message passing, aggregation, and node update for MPNN-LSPE and MPNN-LSPE-Geom for both standard and isotropic MPNNs.
+</p>
 
 ## Experiments
 
-Data The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
+**Data** The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
 consisting of around 18 nodes. In this dataset, the graphs represent molecules, with the nodes
 representing atoms and the undirected, typed edges representing various types of bonds between these atoms. The objective of analyzing this dataset is to predict 13 quantum chemical properties.
 Nevertheless, this study only focuses on inferring the Isotropic Polarizability α.
@@ -232,7 +302,12 @@ EGNN with no PEs obtains a much better performance in a FC setting, which can be
 the fact that in the FC setting the EGNN can better capture long-range dependencies as the whole
 graph becomes accessible in one hop.
 
-![Table 3](./images/table-3.png)
+<p align="center">
+    <img src="./images/table-3.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 3.</em> EGNN: (MPNN Geom vs MPNN Geom PE) Analysis of the effect of non-learnable PEs on the original QM9 data versus the fully connected QM9 data for different numbers of layers.
+</p>
 
 For the second experiment, we trained both model architectures and all of their variants on the
 QM9 dataset for 4 and 7 layers in a NFC setting. The results are shown in table 4. The MPNNs
@@ -267,7 +342,20 @@ learnt encodings, but it also demonstrates how our method for integrating topolo
 is applicable to different models, resulting in a better overall performance than just using LSPE
 without geometry.
 
-![Tables 4 5](./images/table-4-5.png)
+
+<p align="center">
+    <img src="./images/table-4.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 4.</em> Analysis of the effect of different variants of MPNN and MPNN-Isotropic architectures on Test MAE for 4 and 7 layers.
+</p>
+
+<p align="center">
+    <img src="./images/table-5.png" style="margin:0" alt>
+</p>
+<p align="center">
+    <em>Table 5.</em> Analysis of the effect of different variants of MPNN-Isotropic architectures on Test MAE for 10 layers.
+</p>
 
 ## Conclusion 
 
