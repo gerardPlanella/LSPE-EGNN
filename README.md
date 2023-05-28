@@ -41,7 +41,7 @@ The arguments can take on the following values:
 | [1-28]       | The dimension of the PE vectors per node. **Default 24** |
 
 ## Reproducibility of Experiments
-We use [WandB](https://wandb.ai/) as our central dashboard to keep track of your hyperparameters, system metrics, and predictions and results.
+We use [WandB](https://wandb.ai/dl2-gnn-lspe?shareProfileType=copy) as our central dashboard to keep track of your hyperparameters, system metrics, and predictions and results.
 Before running the experiments, login to your wandb account by entering the following command:
 ```commandline
 $ wandb login 
