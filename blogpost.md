@@ -247,7 +247,7 @@ in Section 2.2. The detailed formulas for each model can be found in Tables 1 an
 
 ## Experiments
 
-Data The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
+**Data** The QM9 dataset, first introduced by [Ramakrishnan et al., 2014] and subsequently studied by [Gilmer et al., 2017b] and [Wu et al., 2018], comprises approximately 130,000 graphs, each
 consisting of around 18 nodes. In this dataset, the graphs represent molecules, with the nodes
 representing atoms and the undirected, typed edges representing various types of bonds between these atoms. The objective of analyzing this dataset is to predict 13 quantum chemical properties.
 Nevertheless, this study only focuses on inferring the Isotropic Polarizability α.
