@@ -72,8 +72,13 @@ graph generation. Several notable MPNN variants include Graph Convolutional Netw
 [ Hamilton et al., 2017] and Graph Isomorphism Networks (GIN) [Xu et al., 2018], each offering
 unique strategies for message passing and aggregation.
 
+$$\\begin{equation}
+    h\_i^{\\ell+1} =f\_h\\left(h\_i^{\\ell},\\left\\{h\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\ h\_i^{\\ell+1}, \\ h\_i^{\ell} \\in \\mathbb{R}^d, 
+\\end{equation}$$
 
-![MPNN Equations](./images/MPNN%20equations.png)
+$$\\begin{equation}
+    e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
 
 ### E(n) Equivariant GNN
 
@@ -100,9 +105,13 @@ random anchor node sets [You et al., 2019]. Another relevant method which this s
 involves diffusion-based Random walks [Bourgain, 1985 , Chung, 1997]. The encodings produced
 with this method carry significant descriptive power when considering graph topology, as they can
 effectively capture the graph’s diffusion characteristics [Topping et al., 2022]. We perform visualisations of Random Walk Positional Encodings in the following [jupyter notebook](https://github.com/gerardPlanella/LSPE-EGNN/tree/main/demos/qm9_rw_exploration.ipynb). Formally, the RW
-matrix can be defined over k-steps as :
+matrix can be defined over $k$-steps as:
 
-![RW Equations](./images/PE-vector.png)
+$$\\begin{equation}
+    p\_i^{\\text{RW}} = \\left[\\text{RW}\_{ii}, \\ \\text{RW}^2\_{ii}, \\ ... \\ \\text{RW}^k\_{ii}\\right]
+\\end{equation}$$
+
+where $p\_i^{\\text{RW}} \\in \\mathbb{R}^k$ is initial PE of node $i$, and $\\text{RW} = AD^{-1}$, given the adjacency matrix $A$ and the degree matrix $D$. Moreover, the intuition behind $RW\_{ii}^{k}$ can be interpreted as the probability of starting and ending a $k$-hop random walk on node $i$. 
 
 ### Learnable Structural and Positional Encodings
 
@@ -120,7 +129,24 @@ positional properties. The combination of structural and positional encodings pr
 representation of the graph, manifested through more expressive node embeddings, leading to
 improved performance in node classification, link prediction, and graph generation tasks.
 
-![LSPE Equations](./images/LSPE-equations.png)
+
+$$\\begin{equation}
+  h\_i^{\\ell+1} =f\_h\\left(\\left[\\begin{array}{c}
+  h\_i^{\\ell} \\\\
+  p\_i^{\\ell}
+  \\end{array}\\right], \\ \\left\\{\\left[\\begin{array}{c}
+  h\_j^{\\ell} \\\\
+  p\_j^{\\ell}
+  \\end{array}\\right]\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\ h\_i^{\\ell+1}, \\  h\_i^{\\ell} \\in \\mathbb{R}^d,
+\\end{equation}$$
+
+$$\\begin{equation}
+e\_{i j}^{\\ell+1} =f\_e\\left(h\_i^{\\ell}, \\ h\_j^{\\ell}, \\ e\_{i j}^{\\ell}\\right), \\ e\_{i j}^{\\ell+1}, \\ e\_{i j}^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
+
+$$\\begin{equation}
+    p\_i^{\\ell+1}  =f\_p\\left(p\_i^{\\ell}, \\ \\left\\{p\_j^{\\ell}\\right\\}\_{j \\in \\mathcal{N}\_i}, \\ e\_{i j}^{\\ell}\\right), \\  p\_i^{\\ell+1}, \\ p\_i^{\\ell} \\in \\mathbb{R}^d
+\\end{equation}$$
 
 ## Methodology
 
@@ -161,9 +187,13 @@ Geometry. The last one being our proposal described in 3.1. For all the aforemen
 including PEs, we used a Random Walk (RW) diffusion-based positional encoding scheme as described
 in Section 2.2. The detailed formulas for each model can be found in Tables 1 and 2.
 
-![Table 1](./images/table1.png)
+<p align="center">
+    <img src="./images/table1.png" style="margin:0" alt>
+</p>
 
-![Table 2](./images/table2.png)
+<p align="center">
+    <img src="./images/table2.png" style="margin:0" alt>
+</p>
 
 ## Experiments
 
@@ -222,7 +252,9 @@ EGNN with no PEs obtains a much better performance in a FC setting, which can be
 the fact that in the FC setting the EGNN can better capture long-range dependencies as the whole
 graph becomes accessible in one hop.
 
-![Table 3](./images/table-3.png)
+<p align="center">
+    <img src="./images/table-3.png" style="margin:0" alt>
+</p>
 
 For the second experiment, we trained both model architectures and all of their variants on the
 QM9 dataset for 4 and 7 layers in a NFC setting. The results are shown in table 4. The MPNNs
@@ -257,7 +289,10 @@ learnt encodings, but it also demonstrates how our method for integrating topolo
 is applicable to different models, resulting in a better overall performance than just using LSPE
 without geometry.
 
-![Tables 4 5](./images/table-4-5.png)
+
+<p align="center">
+    <img src="./images/table-4-5.png" style="margin:0" alt>
+</p>
 
 ## Conclusion 
 
